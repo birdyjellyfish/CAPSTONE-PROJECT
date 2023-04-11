@@ -1,5 +1,5 @@
 <GROUP NAME>
 Team members:
 1.
-2.
+2. kaelin
 3.
