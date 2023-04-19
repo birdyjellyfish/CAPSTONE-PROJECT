@@ -36,6 +36,7 @@ class Collection:
         self._collection.delete_one({'student_name': name})
         return
 
+#junction table class needs to be updated to support multiple junction tables
 class JunctionTable(Collection):
     """
     """
