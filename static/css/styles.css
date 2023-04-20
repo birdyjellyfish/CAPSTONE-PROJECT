@@ -1,0 +1,69 @@
+body{
+    font-family: Verdana, Arial, Helvetica;
+}
+
+.highlight-red {
+    font-weight: bold;
+    color: red;
+}			
+
+.highlight-blue {
+    font-weight: bold;
+    color: lightblue;
+}			
+
+.highlight-white {
+    font-weight: bold;
+    color: white
+}
+
+.highlight-pink {
+    font-weight: bold;
+    color: lightpink
+}
+
+.highlight-purple {
+    font-weight: bold;
+    color: #c19ad0
+}
+.instruction {
+    font-size: 14px;
+    font-style: italic;
+}
+
+.main-heading, .container, .footer {
+    width: 500px;
+    /* margin value of auto places the content in the center */
+    padding: 5px;
+    margin: auto;
+}
+
+.container {
+    display: table;
+    border: 0.5px solid #a3b9c2;
+}
+
+.ralign {
+    /*display: flex; 
+    justify-content: flex-end;*/
+    float:right;
+}
+        
+img {
+    float: left;
+    padding: 10px;
+}
+
+table td { 
+    width: 10em; 
+    border: 0.5px solid #193d1d;
+    font-weight: bold;
+}
+
+html {background-color: #242729}
+
+table td { 
+    width: 10em; 
+    border: 0.5px solid #91c0ca;
+    font-weight: bold;
+}
