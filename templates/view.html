@@ -1,0 +1,28 @@
+<html>
+<head>
+    <title>Student CCA Portal Add page</title>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/styles.css')}}">
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class='container'>
+    <span class='highlight-blue'>{{title}}</span>
+        <br>
+    {% if page_type == 'new' %}
+    <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
+    </br>
+        <select name='choice'>
+            {% for item in choices %}
+            <option value = "{{item}}">{{item}}</option>
+            {% endfor %}
+        </select>
+    <br>
+        <input type='submit' value='Submit'>
+    </form>       
+    {% endif %}
+
+    <!-- need to add another if statement for page_type = result to show the information -->
+    
+    </div>
+</body>   
+</html>
