@@ -1,0 +1,72 @@
+<html>
+<head>
+    <title>Student CCA Portal Edit page</title>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/styles.css')}}">
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class='container'>
+    <span class='highlight-purple'>{{title}}</span>
+        <br>
+    {% if page_type == 'new' %}
+    <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
+        <br>
+        <select name='choice'>
+            {% for item in choices %}
+            <option value='{{item}}'>{{item}}</option>
+            {% endfor %}
+        </select>
+    <br><br>
+        <input type='submit' value='Submit'>
+    </form>
+    {% endif %}
+
+    {% if page_type == 'search'%}
+        <br>
+    <table>
+        <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
+            <tr>
+                <td><span class='highlight-pink'><input value='{{choice}}' type='hidden' name='choice'>Student Name:</span></td>
+                <td><input id='name' type='text' name='name'></td>
+            </tr>
+    </table>
+    <br>
+    <input type='submit' value='search'>
+    </form>
+    {% endif %}
+
+    {% if page_type == 'verify' %}
+        <br>
+    <table>
+        <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
+            <tr>
+                <td><span class='highlight-pink'>Student Name:</span></td>
+                <td><span class='highlight-pink'><input type='hidden' name='choice' value='{{choice}}'>{{choice}}:</span></td>
+            </tr>
+            <tr>
+                <td><span class='highlight-pink'><input name='name' type='hidden' value='{{data.keys()|join("")}}'>{{data.keys()|join("")}}</span></td>
+                <td><input id='edit' type='text' name='edit' value="{{data.values()|join('')}}"></td>
+            </tr>
+    </table>
+        <br>
+    <input type='submit' value='Done'>
+    </form>
+    {% endif %}
+
+    {% if page_type == 'success' %}
+        <br>
+    <table>
+        <tr>
+            <td><span class='highlight-pink'>Student Name:</span></td>
+            <td><span class='highlight-pink'>{{choice}}:</span></td>
+        </tr>
+        <tr>
+            <td><span class='highlight-pink'>{{name}}</span></td>
+            <td><span class='highlight-pink'>{{new}}</span></td>
+        </tr>
+    </table>
+    {% endif %}
+    {% include 'footer.html' %}
+    </div>
+</body>
+</html>

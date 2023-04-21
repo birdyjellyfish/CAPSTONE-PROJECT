@@ -1,12 +1,12 @@
 <html>
 <head>
-    <title>Student CCA Portal Add page</title>
+    <title>Student CCA Portal View page</title>
     <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/styles.css')}}">
 </head>
 <body>
     {% include 'header.html' %}
     <div class='container'>
-    <span class='highlight-blue'>{{title}}</span>
+    <span class='highlight-purple'>{{title}}</span>
         <br>
     {% if page_type == 'new' %}
     <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
@@ -16,13 +16,37 @@
             <option value = "{{item}}">{{item}}</option>
             {% endfor %}
         </select>
-    <br>
+    <br><br>
         <input type='submit' value='Submit'>
     </form>       
     {% endif %}
 
-    <!-- need to add another if statement for page_type = result to show the information -->
-    
+    {% if page_type == 'search' %}
+        <br>
+    <table>
+    <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
+        <tr>
+            <td><span class='highlight-pink'><label for='{{choice}}'>{{choice}}:</label></span></td>
+            <td><input id={{choice}} type='text' name={{choice}} value=''></td>
+        </tr>
+   
+    </table>
+    <br>
+    <input type='submit' value='search'>  </form>
+    {% endif %}        
+
+    {% if page_type == 'result' %}
+        <br>
+    <table>
+    {% for key,value in data.items() %}
+    <tr>
+        <td><span class='highlight-pink'>{{key.replace('_',' ').title()}}:</span></td>
+        <td><span class='highlight-pink'>{{value}}</span></td>
+    </tr>
+    {% endfor %}
+    </table>
+    {% endif %}
+    {% include 'footer.html' %}
     </div>
 </body>   
 </html>
