@@ -4,12 +4,6 @@ DBNAME = "webapp_database"
 class Collection:
     """
     Collection class acts as an interface with the database and its tables.
-
-    Methods:
-    add(record)
-    get(name)
-    update(name, record)
-    delete(name)
     """
     def __init__(self, tblname):
         self._dbname = DBNAME
@@ -96,15 +90,6 @@ class Classes(Collection):
     def get_all(self, class_name):
         """Returns all students in the corresponding class."""
         # check if class exists
-        query = f"""
-                SELECT 'name'
-                FROM 'sqlite_master'
-                WHERE type = 'table' AND name = ?
-                """
-        values = tuple(class_name)
-        rows = self._return(query, values)
-        if not rows[0][0]:
-            return None
             
         # retrieve class_id
         query = f"""
