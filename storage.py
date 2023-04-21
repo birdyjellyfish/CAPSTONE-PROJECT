@@ -1,4 +1,4 @@
-import pymongo
+import sqlite3
 
 class Collection:
     """
@@ -10,19 +10,24 @@ class Collection:
     update(name, record)
     delete(name)
     """
-    def __init__(self, collection_name):
-        self._client = pymongo.client('127.0.0.0', 27017)
-        self._db = self.client["Moses"]
-        self._collection = self.db[collection_name]
+    def __init__(self, dbname, tblname):
+        self._dbname = dbname
+        self._tblname = tblname
 
     def __repr__(self):
         pass
 
-    def add(self, record: dict):
-        """Adds a record into the collection"""
-        self._collection.insert_one(record)
-        return
+    def _execute(self, query, values=None):
+        conn = sqlite3.connect(self._dbname)
+        c = conn.cursor()
+        c.execute(query, values)
+        conn.commit()
+        conn.close()
 
+    def add(self, record: dict):
+        """Adds a record into the table"""
+        return record
+        
     def get(self, name: str):
         """Returns a record with the corresponding name from collection"""
         return record
@@ -33,7 +38,6 @@ class Collection:
 
     def delete(self, name: str):
         """Deletes the record with the corresponding name"""
-        self._collection.delete_one({'student_name': name})
         return
 
 #junction table class needs to be updated to support multiple junction tables
@@ -48,7 +52,14 @@ class Students(Collection):
     Student Collection
     """
     def __init__(self):
-        super().__init__("Students")
+        super().__init__("Webapp_Database", "Students")
+
+    def add(self, record: dict):
+        query = f"""
+                INSERT INTO {self._tblname} VALUES (?, ?, ?, ?, ?)
+                """
+        values = tuple(record.values())
+        self._execute(query, values)
 
 class Classes(Collection):
     """
