@@ -24,10 +24,9 @@
     {% endif %}   
 
     {% if page_type == 'form' %}
-    <br>
     
     <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
-        
+    <table>
     {% for key, value in form_data.items() %}
     <tr>
         <td><span class='highlight-pink'><label for='{{key}}'>{{key}}:</label></span></td>
@@ -35,7 +34,8 @@
     </tr>
     <br>   
     {% endfor %}
-        
+    </table>
+    <br>
     <input type='submit' value='{{button}}'>     
         
     </form>
@@ -45,7 +45,7 @@
         <br>
     {% for key, value in form_data.items() %}
     <tr>
-        <td><span class='highlight-pink'>{{key}}:</span></td>
+        <td><span class='highlight-pink'>{{key}}:&nbsp;</span></td>
         <td><span class='highlight-purple'>{{value}}</span></td>
     </tr>
     <br>    
