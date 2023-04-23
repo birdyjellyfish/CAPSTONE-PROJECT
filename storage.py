@@ -1,5 +1,5 @@
 import sqlite3
-DBNAME = "webapp_database"
+DBNAME = "webapp_database.db"
 
 class Collection:
     """
@@ -15,19 +15,30 @@ class Collection:
     def _execute(self, query, values=None):
         conn = sqlite3.connect(self._dbname)
         c = conn.cursor()
-        c.execute(query, values)
+
+        if values is None:
+            c.execute(query)
+        else:
+            c.execute(query, values)
         conn.commit()
         conn.close()
 
-    def _return(self, query, values=None):
+    def _return(self, query, values=None, multi=False):
         conn = sqlite3.connect(self._dbname)
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
-        c.execute(query, values)
-        row = c.fetchone() 
+        if values is None:
+            c.execute(query)
+        else:
+            c.execute(query, values)
+        if not multi:
+            row = c.fetchone() 
+        else:
+            row = c.fetchall()
         conn.close()
         return row # sqlite3.Row object (supports both numerical and key indexing)
 
+    #isnt b just self._tblname
     def _retrieve(self, a, b, c, d):
         """
         Returns a query and values to retrieve data
@@ -143,7 +154,6 @@ class Subjects(Collection):
     def __init__(self):
         super().__init__("Subjects")
 
-
 class CCAs(Collection):
     """
     CCAs Collection
@@ -155,7 +165,7 @@ class CCAs(Collection):
         """"""
         pass
 
-    def search(self, student_name):
+    def get(self, student_name):
         """Returns a student's CCA."""
         # retrieve student_id
         query = """
@@ -209,7 +219,7 @@ class CCAs(Collection):
 
         data = {}
         for i, elem in enumerate(field_names):
-            data{elem} = row[i]
+            data[elem] = row[i]
         return data # dictionary
 
 class Activities(Collection):
