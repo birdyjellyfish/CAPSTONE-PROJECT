@@ -68,23 +68,28 @@ class Students(Collection):
     def __init__(self):
         super().__init__("Students")
 
-    def add(self, record: dict):
-        """
-        Adds a student record into the database.
-        Record includes
-        """
-        query = f"""
-                INSERT INTO {self._tblname} VALUES (?, ?, ?, ?, ?, ?, ?)
-                """
-        values = tuple(record.values())
-        self._execute(query, values)
-
+    def add(self, record):
+        pass
+        
     def get(self, student_name):
-        """Returns record of student."""
+        """Returns a student's record."""
         query = f"""
                 SELECT *
-                FROM {self._tblname}
+                FROM '{self._tblname}'
+                WHERE student_name = ?
                 """
+        values = tuple(student_name)
+        row = self._execute(query, values)
+
+        # check if student exists
+        if row is None:
+            return None
+
+        field_names = row.keys()
+        data = {}
+        for i, elem in enumerate(field_names):
+            data[elem] = row[i]
+        return data
 
     def update(self, student_name, record):
         """Updates student record in database."""
@@ -115,16 +120,21 @@ class Classes(Collection):
     def get_all(self, class_name):
         """Returns all students in the corresponding class."""
         # retrieve class_id
-        query = self._retrieve("class_id", self._tblname, "class_name", class_name)
-        row = self._return(query)
+        query = f"""
+                SELECT 'class_id'
+                FROM '{self._tblname}'
+                WHERE class_name = ?
+                """
+        values = tuple(class_name)
+        row = self._return(query, values)
         class_id = row["class_id"]
 
         # check if class exists
-        if class_id is None:
+        if row is None:
             return None
         
         # retrieve student_id and student_name
-        query = f"""
+        query = """
                 SELECT 'student_id', 'student_name'
                 FROM 'Students-Classes'
                 WHERE class_id = ?
@@ -178,7 +188,7 @@ class CCAs(Collection):
         student_id = row["student_id"]
 
         # check if student exists
-        if student_id is None:
+        if row is None:
             return None
         
         # retrieve cca_id
@@ -207,7 +217,6 @@ class CCAs(Collection):
 
     def get_all(self, cca_name):
         """Returns a CCA's details."""
-        # CHECK IF CCA EXITSTS
         query = """
                 SELECT *
                 FROM 'CCAs'
@@ -215,8 +224,12 @@ class CCAs(Collection):
                 """
         values = tuple(cca_name)
         row = self._return(query, values)
-        field_names = row.keys()
 
+        # check if CCA exists
+        if row is None:
+            return None
+        
+        field_names = row.keys()
         data = {}
         for i, elem in enumerate(field_names):
             data[elem] = row[i]
@@ -229,5 +242,62 @@ class Activities(Collection):
     def __init__(self):
         super().__init__("Activies")
 
-    # search method return dictionary {kaelin: activity}
-    # get_all method returns activity info
+    def search(self, student_name):
+        """Returns a student's activity."""
+        # retrieve student_id
+        query = """
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?
+                """
+        values = tuple(student_name)
+        row = self._execute(query, values)
+        student_id = row["student_id"]
+
+        # check if student exists
+        if row is None:
+            return None
+
+        # retrieve activity_id
+        query = """
+                SELECT 'activity_id'
+                FROM 'Students-Activities'
+                WHERE student_id = ?
+                """
+        values = tuple(student_id)
+        row = self._execute(query, values)
+        activity_id = row["activity_id"]
+
+        # retrieve activity_name
+        query = f"""
+                SELECT 'activity_name'
+                FROM '{self._tblname}'
+                WHERE activity_id = ?
+                """
+        values = tuple(activity_id)
+        row = self._execute(query, values)
+        activity_name = row["activity_name"]
+
+        data = {}
+        data[student_name] = activity_name
+        return data # dictionary(key=student_name, value=activity_name)
+
+    def get_all(self, activity_name):
+        """Returns an activity's details."""
+        query = f"""
+                SELECT *
+                FROM '{self._tblname}'
+                WHERE activity_name = ?
+                """
+        values = tuple(activity_name)
+        row = self._execute(query, values)
+
+        # check if activity exists
+        if row is None:
+            return None
+
+        field_names = row.keys()
+        data = {}
+        for i, elem in enumerate(field_names):
+            data[elem] = row[i]
+        return data
