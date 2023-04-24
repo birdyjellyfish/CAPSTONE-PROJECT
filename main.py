@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+"""from flask import Flask, render_template, request
 import front
 
 app = Flask(__name__)
@@ -202,4 +202,5 @@ def edit():
 
 
 if __name__ == '__main__':
-    app.run('0.0.0.0')
+    app.run('0.0.0.0')"""
+
