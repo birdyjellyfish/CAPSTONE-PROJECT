@@ -121,6 +121,7 @@ def view():
     }
 
     if 'searched' in request.args:
+        # if student does not exists render does not exist html
         # get data from databases, data u get will be a dictionary, use the search method
         # assign it to data and it should work
         key = list(request.form.keys()) 
@@ -164,6 +165,7 @@ def edit():
         }
 
     if 'searched' in request.args:
+        # if not found render error page - html file but not created yet
         key = list(request.form.keys())
         page_type = 'verify'
         choice = request.form['choice']
