@@ -169,6 +169,7 @@ class Students(Collection):
 class Classes(Collection):
     """
     Classes Collection
+    
     Methods:
     --------
     add()
