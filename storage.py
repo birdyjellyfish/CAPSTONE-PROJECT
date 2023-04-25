@@ -22,7 +22,7 @@ class Collection:
         conn.commit()
         conn.close()
 
-    def _return(self, query, values=None):
+    def _return(self, query, values=None, multi=False):
         conn = sqlite3.connect(self._dbname)
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
@@ -30,7 +30,10 @@ class Collection:
             c.execute(query)
         else:
             c.execute(query, values)
-        row = c.fetchone()
+        if multi:
+            row = c.fetchall()
+        else:
+            row = c.fetchone()
         conn.close()
         return row # sqlite3.Row object (supports both numerical and key indexing)
 
@@ -66,13 +69,23 @@ class Students(Collection):
         """Adds a student record into the database."""
         # check if student exists
         if self._is_exist(self._tblname, "student_name", record["student_name"]):
-            raise KeyError("Record already exists.")
-            
-        query = f"""
-                INSERT INTO '{self._tblname}' VALUES ({','.join(['?' for key in record.keys()])})
+            return "exists"
+
+        # retrieve class_id
+        query = """SELECT 'class_id'
+                FROM "Classes"
+                WHERE class_name = ?;
                 """
-        values = tuple(record.values())
-        self._execute(query, values)
+        values = tuple(record["class_name"])
+        row = self._return(query, values, multi=False)
+        class_id = row["class_id"]
+        record["class_id"] = class_id
+        
+        # add student record
+        query = f"""
+                INSERT INTO '{self._tblname}' VALUES (:student_name, :age, :year_enrolled, :grad_year, :class_id);
+                """
+        self._execute(query, record)
         return
         
     def get(self, student_name):
@@ -83,12 +96,13 @@ class Students(Collection):
                 WHERE student_name = ?
                 """
         values = tuple(student_name)
-        row = self._execute(query, values)
+        row = self._return(query, values, False)
 
         # check if student exists
         if not self._is_exist("Students", "student_name", student_name):
             return None
 
+        # 
         field_names = row.keys()
         data = {}
         for i, elem in enumerate(field_names):
@@ -100,13 +114,27 @@ class Students(Collection):
         # check if student exists
         if self._is_exist(self._tblname, "student_name", record["student_name"]:
             raise KeyError("Student already exists.")
-
+            
+        # retrieve class_id
+        query = f"""
+                SELECT 'class_id'
+                FROM 'Classes'
+                WHERE class_name = ?;
+                """
+        values = tuple(record["class_name"])
+        row = self._return(query, values, False)
+        class_id = row["class_id"]
+        
+        # update student record
         query = f"""
                 UPDATE '{self._tblname}' SET
-                {','.join([f'"{key}" = {value}' for key, value in record.items()])}
-                WHERE student_name = ?
+                    "age" = ?,
+                    "year_enrolled" = ?,
+                    "grad_year" = ?,
+                    "class_id" = ?,
+                WHERE student_name = ?;
                 """
-        values = tuple(record["student_name"])
+        values = tuple(record["age"], record["year_enrolled"], record["grad_year"], class_id, record["student_name"])
         self._execute(query, values)
         return
         
@@ -115,13 +143,26 @@ class Students(Collection):
         # check if student exists
         if not self._is_exist(self._tblname, "student_name", student_name):
             raise KeyError("Student does not exist.")
-        
-        query = f"""
-                DELETE FROM '{self._tblname}'
-                WHERE student_name = ?
+
+        # retrieve student_id
+        query = """
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?;
                 """
         values = tuple(student_name)
-        self._execute(query, values)
+        row = self._return(row, values, False)
+        student_id = row["student_id"]
+        
+        # delete from Students-Activities, Students-CCAs, Students-Subjects and Students table
+        tblnames = ["Students-Activites", "Students-CCAs", "Students-Subjects", "Students"]
+        for tblname in tblnames:
+            query = f"""
+                    DELETE FROM '{tblname}'
+                    WHERE student_id = ?;
+                    """
+            values = tuple(student_id)
+            self._execute(query, values)
         return
 
 
