@@ -42,7 +42,7 @@ class Collection:
         query = """
                 SELECT *
                 FROM ?
-                WHERE ? = ?
+                WHERE ? = ?;
                 """
         values = tuple(tblname, key, value)
         row = self._execute(query, values)
@@ -93,7 +93,7 @@ class Students(Collection):
         query = f"""
                 SELECT *
                 FROM '{self._tblname}'
-                WHERE student_name = ?
+                WHERE student_name = ?;
                 """
         values = tuple(student_name)
         row = self._return(query, values, False)
@@ -188,7 +188,7 @@ class Classes(Collection):
 
         # add class
         query = f"""
-                INSERT INTO '{self._tblname}' VALUES (:class_name, :level)
+                INSERT INTO '{self._tblname}' VALUES (:class_name, :level);
                 """
         self._execute(query, record)
         return
@@ -204,7 +204,7 @@ class Classes(Collection):
                 SELECT 'student_id', 'student_name'
                 FROM 'Students'
                 WHERE class_name = ?
-                ORDER BY 'student_id' ASC
+                ORDER BY 'student_id' ASC;
                 """
         values = tuple(class_name)
         row = self._return(query, values)
@@ -224,7 +224,7 @@ class Classes(Collection):
         query = f"""
                 UPDATE '{self._tblname}' SET
                     'level' = ?
-                WHERE class_name = ?
+                WHERE class_name = ?;
                 """
         values = tuple(record["level"], record["class_name"])
         self._execute(query, values)
