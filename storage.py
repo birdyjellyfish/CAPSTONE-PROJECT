@@ -90,36 +90,35 @@ class Students(Collection):
         
     def get(self, student_name):
         """Returns a student's record."""
+        data = {}
+        data["student_name"] = student_name
         # check if student exists
         if not self._is_exist("Students", "student_name", student_name):
             return False
         
         # retrieve student record
         query = f"""
-                SELECT *
+                SELECT 'age', 'year_enrolled', 'grad_year', 'class_id'
                 FROM '{self._tblname}'
                 WHERE student_name = ?;
                 """
         values = tuple(student_name)
         row = self._return(query, values, multi=False)
-
+        data["age"] = row["age"]
+        data["year_enrolled"] = row["year_enrolled"]
+        data["grad_year"] = row["grad_year"]
+        class_id = row["class_id"]
+        
         # retrieve class_name
         query = f"""
                 SELECT 'class_name'
                 FROM 'Classes'
                 WHERE class_id = ?;
                 """
-        values = tuple(row["class_id"])
-        row2 = self._return(query, values, multi=False)
-        class_name = row2["class_name"]
-        del row["class_id"]
-        row["class_name"] = class_name
+        values = tuple(class_id)
+        row = self._return(query, values, multi=False)
+        data["class_name"] = row["class_name"]
 
-        # convert data to dictionary
-        field_names = row.keys()
-        data = {}
-        for i, elem in enumerate(field_names):
-            data[elem] = row[i]
         return data
 
     def update(self, record):
@@ -290,6 +289,8 @@ class CCAs(Collection):
 
     def get(self, student_name):
         """Returns a student's CCA."""
+        data = {}
+        data["student_name"] = student_name
         # check if student exists
         if not self._is_exist("Students", "student_name", student_name):
             return False
@@ -311,11 +312,11 @@ class CCAs(Collection):
                 WHERE student_id = ?
                 """
         values = tuple(student_id)
-        row = self._return(query, values, multi=True)
+        row = self._return(query, values, multi=False)
         cca_id = row["cca_id"]
-        role = row["role"]
+        data["role"] = row["role"]
 
-         # check if CCA exists
+        # check if CCA exists
         if not self._is_exist("CCAs", "cca_id", cca_id):
             return False
             
@@ -327,14 +328,9 @@ class CCAs(Collection):
                 """
         values = tuple(cca_id)
         row = self._return(query, values)
-        cca_name = row["cca_name"]
+        data["cca_name"] = row["cca_name"]
 
-        # convert data into dictionary
-        data = {}
-        data["student_name"] = student_name
-        data["cca_name"] = cca_name
-        data["role"] = role
-        return
+        return data
 
     def get_info(self, cca_name):
         """Returns a CCA's details."""
@@ -388,6 +384,9 @@ class Activities(Collection):
 
     def get(self, student_name):
         """Return a student's activity record."""
+        data = {}
+        data["student_name"] = student_name
+        
         # check if student exists
         if not self._is_exist("Students", "student_name", student_name):
             return False
@@ -409,11 +408,11 @@ class Activities(Collection):
                 WHERE student_id = ?
                 """
         values = tuple(student_id)
-        row = self._return(query, values, multi=True)
+        row = self._return(query, values, multi=False)
         activity_id = row["activity_id"]
-        role = row["role"]
-        award = row["award"]
-        hours = row["hours"]
+        data["role"] = row["role"]
+        data["award"] = row["award"]
+        data["hours"] = row["hours"]
         
         # check if activity exists
         if not self._is_exist(self._tblname, "activity_id", activity_id):
@@ -427,15 +426,8 @@ class Activities(Collection):
                 """
         values = tuple(activity_id)
         row = self._return(query, values, multi=False)
-        activity_name = row["activity_name"]
+        data["activity_name"] = row["activity_name"]
         
-        # convert data to dictionary
-        data = {}
-        data["student_name"] = student_name
-        data["activity_name"] = activity_name
-        data["role"] = role
-        data["award"] = award
-        data["hours"] = hours
         return data
 
     def get_info(self, activity_name):
