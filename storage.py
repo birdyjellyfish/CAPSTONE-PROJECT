@@ -336,7 +336,7 @@ class CCAs(Collection):
         data["role"] = role
         return
 
-    def get_all(self, cca_name):
+    def get_info(self, cca_name):
         """Returns a CCA's details."""
          # check if CCA exists
         if not self._is_exist("CCAs", "cca_name", cca_name):
@@ -366,6 +366,7 @@ class Activities(Collection):
     Methods:
     --------
     add(record)
+    search(student_name)
     """
     def __init__(self):
         super().__init__("Activities")
@@ -379,11 +380,13 @@ class Activities(Collection):
 
         # add activity record
         query = f"""
-                INSERT INTO '{self._tblname}' VALUES (?, ?, ?, ?);
+                INSERT INTO '{self._tblname}' VALUES (:activity_name, :start_date, :end_date, :description);
                 """
+        self._execute(query, record)
+        return
         
 
-    def search(self, student_name):
+    def get(self, student_name):
         """Returns a student's activity."""
         # retrieve student_id
         query = """
@@ -422,8 +425,15 @@ class Activities(Collection):
         data = {}
         data[student_name] = activity_name
         return data # dictionary(key=student_name, value=activity_name)
+        """Return a student's activity record."""
+        # check if student exists
+        # retrieve student_id
+        # retrieve activity_id, role, award, hours
+        # check if activity exists
+        # retrieve activity_name
+        # convert data to dictionary
 
-    def get_all(self, activity_name):
+    def get_info(self, activity_name):
         """Returns an activity's details."""
         query = f"""
                 SELECT *
