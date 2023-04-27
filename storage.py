@@ -366,7 +366,7 @@ class Activities(Collection):
     Methods:
     --------
     add(record)
-    search(student_name)
+    get(student_name)
     """
     def __init__(self):
         super().__init__("Activities")
@@ -387,31 +387,38 @@ class Activities(Collection):
         
 
     def get(self, student_name):
-        """Returns a student's activity."""
-        # retrieve student_id
-        query = """
-                SELECT 'student_id'
-                FROM 'Students'
-                WHERE student_name = ?
-                """
-        values = tuple(student_name)
-        row = self._execute(query, values)
-        student_id = row["student_id"]
-
+        """Return a student's activity record."""
         # check if student exists
         if not self._is_exist("Students", "student_name", student_name):
-            return None
-
-        # retrieve activity_id
-        query = """
-                SELECT 'activity_id'
+            return False
+            
+        # retrieve student_id
+        query = f"""
+                SELECT 'student_id'
+                FROM "Students"
+                WHERE student_name = ?;
+                """
+        values = tuple(student_name)
+        row = self._return(query, values, multi=False)
+        student_id = row["student_id"]
+        
+        # retrieve activity_id, role, award, hours
+        query = f"""
+                SELECT 'activity_id', 'role', 'award', 'hours'
                 FROM 'Students-Activities'
                 WHERE student_id = ?
                 """
         values = tuple(student_id)
-        row = self._execute(query, values)
+        row = self._return(query, values, multi=True)
         activity_id = row["activity_id"]
-
+        role = row["role"]
+        award = row["award"]
+        hours = row["hours"]
+        
+        # check if activity exists
+        if not self._is_exist(self._tblname, "activity_id", activity_id):
+            return False
+        
         # retrieve activity_name
         query = f"""
                 SELECT 'activity_name'
@@ -419,34 +426,34 @@ class Activities(Collection):
                 WHERE activity_id = ?
                 """
         values = tuple(activity_id)
-        row = self._execute(query, values)
+        row = self._return(query, values, multi=False)
         activity_name = row["activity_name"]
-
-        data = {}
-        data[student_name] = activity_name
-        return data # dictionary(key=student_name, value=activity_name)
-        """Return a student's activity record."""
-        # check if student exists
-        # retrieve student_id
-        # retrieve activity_id, role, award, hours
-        # check if activity exists
-        # retrieve activity_name
+        
         # convert data to dictionary
+        data = {}
+        data["student_name"] = student_name
+        data["activity_name"] = activity_name
+        data["role"] = role
+        data["award"] = award
+        data["hours"] = hours
+        return data
 
     def get_info(self, activity_name):
         """Returns an activity's details."""
+        # check if activity exists
+        if not self._is_exist("Activities", "activity_name", activity_name):
+            return False
+
+        # retrieve activity record
         query = f"""
                 SELECT *
                 FROM '{self._tblname}'
                 WHERE activity_name = ?
                 """
         values = tuple(activity_name)
-        row = self._execute(query, values)
+        row = self._execute(query, values, multi=False)
 
-        # check if activity exists
-        if not self._is_exist("Activities", "activity_name", activity_name):
-            return None
-
+        # convert data into dictionary
         field_names = row.keys()
         data = {}
         for i, elem in enumerate(field_names):
