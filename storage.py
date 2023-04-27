@@ -69,11 +69,11 @@ class Students(Collection):
         """Adds a student record into the database."""
         # check if student exists
         if self._is_exist(self._tblname, "student_name", record["student_name"]):
-            return "exists"
+            return False
 
         # retrieve class_id
         query = """SELECT 'class_id'
-                FROM "Classes"
+                FROM 'Classes'
                 WHERE class_name = ?;
                 """
         values = tuple(record["class_name"])
@@ -90,19 +90,32 @@ class Students(Collection):
         
     def get(self, student_name):
         """Returns a student's record."""
+        # check if student exists
+        if not self._is_exist("Students", "student_name", student_name):
+            return False
+        
+        # retrieve student record
         query = f"""
                 SELECT *
                 FROM '{self._tblname}'
                 WHERE student_name = ?;
                 """
         values = tuple(student_name)
-        row = self._return(query, values, False)
+        row = self._return(query, values, multi=False)
 
-        # check if student exists
-        if not self._is_exist("Students", "student_name", student_name):
-            return "does not exist"
+        # retrieve class_name
+        query = f"""
+                SELECT 'class_name'
+                FROM 'Classes'
+                WHERE class_id = ?;
+                """
+        values = tuple(row["class_id"])
+        row2 = self._return(query, values, multi=False)
+        class_name = row2["class_name"]
+        del row["class_id"]
+        row["class_name"] = class_name
 
-        # 
+        # convert data to dictionary
         field_names = row.keys()
         data = {}
         for i, elem in enumerate(field_names):
@@ -113,7 +126,7 @@ class Students(Collection):
         """Updates student record in database."""
         # check if student exists
         if self._is_exist(self._tblname, "student_name", record["student_name"]:
-            return "exists"
+            return False
             
         # retrieve class_id
         query = f"""
@@ -172,10 +185,9 @@ class Classes(Collection):
     
     Methods:
     --------
-    add()
+    add(record)
     get_all(class_name)
-    update()
-    delete()
+    update(record)
     """
     def __init__(self):
         super().__init__("Classes")
@@ -184,9 +196,9 @@ class Classes(Collection):
         """Adds a class record to the database."""
         # check if class exists
         if self._is_exist(self._tblname, "class_name", record["class_name"]):
-            return "exists"
+            return False
 
-        # add class
+        # add class record
         query = f"""
                 INSERT INTO '{self._tblname}' VALUES (:class_name, :level);
                 """
@@ -197,28 +209,39 @@ class Classes(Collection):
         """Returns all students in the corresponding class."""
         # check if class exists
         if not self._is_exist("Classes", "class_name", class_name):
-            return None
+            return False
+
+        # retrieve class_id
+        query = f"""
+                SELECT 'class_id'
+                FROM '{self._tblname}'
+                WHERE class_name = ?;
+                """
+        values = tuple(class_name)
+        row = self._return(query, values, multi=False)
+        class_id = row["class_id"]
         
         # retrieve student_id and student_name
         query = """
                 SELECT 'student_id', 'student_name'
                 FROM 'Students'
-                WHERE class_name = ?
+                WHERE class_id = ?
                 ORDER BY 'student_id' ASC;
                 """
-        values = tuple(class_name)
-        row = self._return(query, values)
-        
+        values = tuple(class_id)
+        row = self._return(query, values, multi=True)
+
+        # convert data to dictionary (key=id, value=student_name)
         data = {}
         for item in row:
             data[item["student_id"]] = item["student_name"]
-        return data    # dictionary(key=id, value=student_name)
+        return data
 
     def update(self, record):
         """Updates class record in the database."""
         # check if class exists
         if not self._is_exist(self._tblname, "class_name", record["class_name"]):
-            return "does not exist"
+            return False
 
         # update class record
         query = f"""
@@ -230,10 +253,6 @@ class Classes(Collection):
         self._execute(query, values)
         return
 
-    def delete(self, class_name):
-        """"""
-        pass
-
 
 class Subjects(Collection):
     """
@@ -241,45 +260,65 @@ class Subjects(Collection):
     """
     def __init__(self):
         super().__init__("Subjects")
-
+        
 
 class CCAs(Collection):
     """
     CCAs Collection
+
+    Methods:
+    --------
+    add(record)
+    get(student_name)
+    get_all(cca_name)
     """
     def __init__(self):
         super().__init__("CCAs")
 
-    def add(self, cca_name):
-        """"""
-        pass
+    def add(self, record):
+        """Adds a CCA record to the database."""
+        # check if CCA exists
+        if self._is_exist(self._tblname, "cca_name", record["cca_name"]):
+            return False
+
+        # add CCA record
+        query = f"""
+                INSERT INTO '{self._tblname}' VALUES (:cca_name, :type);
+                """
+        self._execute(query, record)
+        return
 
     def get(self, student_name):
         """Returns a student's CCA."""
+        # check if student exists
+        if not self._is_exist("Students", "student_name", student_name):
+            return False
+            
         # retrieve student_id
         query = """
                 SELECT 'student_id'
                 FROM 'Students'
-                WHERE student_name = ?
+                WHERE student_name = ?;
                 """
         values = tuple(student_name)
-        row = self._return(query, values)
+        row = self._return(query, values, multi=False)
         student_id = row["student_id"]
-
-        # check if student exists
-        if not self._is_exist("Students", "student_name", student_name):
-            return None
         
-        # retrieve cca_id
+        # retrieve cca_id and role
         query = """
-                SELECT 'cca_id'
+                SELECT 'cca_id', 'role'
                 FROM 'Students-CCAs'
                 WHERE student_id = ?
                 """
         values = tuple(student_id)
-        row = self._return(query, values)
+        row = self._return(query, values, multi=True)
         cca_id = row["cca_id"]
+        role = row["role"]
 
+         # check if CCA exists
+        if not self._is_exist("CCAs", "cca_id", cca_id):
+            return False
+            
         # retrive cca_name
         query = """
                 SELECT 'cca_name'
@@ -290,37 +329,59 @@ class CCAs(Collection):
         row = self._return(query, values)
         cca_name = row["cca_name"]
 
+        # convert data into dictionary
         data = {}
-        data[student_name] = cca_name
-        return data    # dictionary(key=student_name, value=cca_name)
+        data["student_name"] = student_name
+        data["cca_name"] = cca_name
+        data["role"] = role
+        return
 
     def get_all(self, cca_name):
         """Returns a CCA's details."""
+         # check if CCA exists
+        if not self._is_exist("CCAs", "cca_name", cca_name):
+            return None
+            
+        # retrieve CCA record
         query = """
                 SELECT *
                 FROM 'CCAs'
-                WHERE cca_name = ?
+                WHERE cca_name = ?;
                 """
         values = tuple(cca_name)
-        row = self._return(query, values)
-
-        # check if CCA exists
-        if not self._is_exist("CCAs", "cca_name", cca_name):
-            return None
+        row = self._return(query, values, multi=False)
         
+        # convert data to dictionary
         field_names = row.keys()
         data = {}
         for i, elem in enumerate(field_names):
             data[elem] = row[i]
-        return data # dictionary
+        return data
 
 
 class Activities(Collection):
     """
     Activities Collection.
+
+    Methods:
+    --------
+    add(record)
     """
     def __init__(self):
-        super().__init__("Activies")
+        super().__init__("Activities")
+
+
+    def add(self, record):
+        """Adds an activity record into the database."""
+        # check if activity exists
+        if self._is_exist(self._tblname, "activity_name", record["activity_name"]):
+            return False
+
+        # add activity record
+        query = f"""
+                INSERT INTO '{self._tblname}' VALUES (?, ?, ?, ?);
+                """
+        
 
     def search(self, student_name):
         """Returns a student's activity."""
