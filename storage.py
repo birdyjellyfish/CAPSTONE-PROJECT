@@ -1,4 +1,5 @@
 import sqlite3
+import pprint
 DBNAME = "webapp_database.db"
 
 class Collection:
@@ -37,19 +38,22 @@ class Collection:
         conn.close()
         return row # sqlite3.Row object (supports both numerical and key indexing)
 
-    def _is_exist(self, key, value, tblname):
+    def _is_exist(self, tblname, key, value):
         """Checks whether a record exists in a table."""
-        query = """
+        query = f"""
                 SELECT *
-                FROM ?
-                WHERE ? = ?;
+                FROM '{tblname}'
+                WHERE '{tblname}'.'{key}' = ?;
                 """
-        values = tuple(tblname, key, value)
-        row = self._execute(query, values)
+        values = (tblname, key, value,)
+        row = self._return(query, (value,))
 
         if row is None:
             return False
         return True
+
+    def _display(self, row_list):
+        pprint.pprint(row_list)
         
 
 class Students(Collection):
@@ -71,8 +75,25 @@ class Students(Collection):
         if self._is_exist(self._tblname, "student_name", record["student_name"]):
             return False
 
+        # check if each subject exists
+        subj_list = record["subj_list"]
+        subj_id_list = []
+        for subj in subj_list:
+            query = """
+                    SELECT *
+                    FROM "Subjects"
+                    WHERE subj_name = ?
+                    AND level = ?;
+                    """
+            values = tuple(subj.values())
+            row = self._return(query, values, multi=False)
+            if row is None:
+                return False
+            subj_id_list.append(row["subj_id"])
+
         # retrieve class_id
-        query = """SELECT 'class_id'
+        query = """
+                SELECT 'class_id'
                 FROM 'Classes'
                 WHERE class_name = ?;
                 """
@@ -86,6 +107,26 @@ class Students(Collection):
                 INSERT INTO '{self._tblname}' VALUES (:student_name, :age, :year_enrolled, :grad_year, :class_id);
                 """
         self._execute(query, record)
+
+        # retrieve student_id
+        query = f"""
+                SELECT 'student_id'
+                FROM '{self._tblname}'
+                WHERE student_name = ?;
+                """
+        values = tuple(record["student_name"])
+        row = self._return(query, values, multi=False)
+        student_id = row["student_id"]
+
+        # add to Students-Subjects table
+        for subj_id in subj_id_list:
+            record = {}
+            record["student_id"] = student_id
+            record["subj_id"] = subj_id
+            query = """
+                    INSERT INTO 'Students-Subjects' VALUES (:student_id, :subj_id);
+                    """
+            self._execute(query, record)
         return
         
     def get(self, student_name):
@@ -124,7 +165,7 @@ class Students(Collection):
     def update(self, record):
         """Updates student record in database."""
         # check if student exists
-        if self._is_exist(self._tblname, "student_name", record["student_name"]:
+        if self._is_exist(self._tblname, "student_name", record["student_name"]):
             return False
             
         # retrieve class_id
@@ -251,6 +292,11 @@ class Classes(Collection):
         values = tuple(record["level"], record["class_name"])
         self._execute(query, values)
         return
+
+    def display_all(self):
+        query = f"""SELECT * FROM '{self._tblname}'"""
+        rows = self._return(query, multi=True)
+        self._display(rows)
 
 
 class Subjects(Collection):
