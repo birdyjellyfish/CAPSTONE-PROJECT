@@ -1,6 +1,6 @@
 import sqlite3
-import pprint
-DBNAME = "webapp_database.db"
+import pandas as pd
+DBNAME = "test_database.db"
 
 class Collection:
     """
@@ -45,7 +45,6 @@ class Collection:
                 FROM '{tblname}'
                 WHERE '{tblname}'.'{key}' = ?;
                 """
-        values = (tblname, key, value,)
         row = self._return(query, (value,))
 
         if row is None:
@@ -53,7 +52,12 @@ class Collection:
         return True
 
     def _display(self, row_list):
-        pprint.pprint(row_list)
+        headers = row_list[0].keys()
+        tables = []
+        for row in row_list:
+            tables.append([row[i] for i in range(len(row))])
+        df = pd.DataFrame(tables, columns = headers)
+        print(df)
         
 
 class Students(Collection):
@@ -75,22 +79,6 @@ class Students(Collection):
         if self._is_exist(self._tblname, "student_name", record["student_name"]):
             return False
 
-        # check if each subject exists
-        subj_list = record["subj_list"]
-        subj_id_list = []
-        for subj in subj_list:
-            query = """
-                    SELECT *
-                    FROM "Subjects"
-                    WHERE subj_name = ?
-                    AND level = ?;
-                    """
-            values = tuple(subj.values())
-            row = self._return(query, values, multi=False)
-            if row is None:
-                return False
-            subj_id_list.append(row["subj_id"])
-
         # retrieve class_id
         query = """
                 SELECT 'class_id'
@@ -104,29 +92,11 @@ class Students(Collection):
         
         # add student record
         query = f"""
-                INSERT INTO '{self._tblname}' VALUES (:student_name, :age, :year_enrolled, :grad_year, :class_id);
+                INSERT INTO '{self._tblname}' (
+                    'student_name', 'age', 'year_enrolled', 'grad_year', 'class_id'
+                ) VALUES (:student_name, :age, :year_enrolled, :grad_year, :class_id);
                 """
         self._execute(query, record)
-
-        # retrieve student_id
-        query = f"""
-                SELECT 'student_id'
-                FROM '{self._tblname}'
-                WHERE student_name = ?;
-                """
-        values = tuple(record["student_name"])
-        row = self._return(query, values, multi=False)
-        student_id = row["student_id"]
-
-        # add to Students-Subjects table
-        for subj_id in subj_id_list:
-            record = {}
-            record["student_id"] = student_id
-            record["subj_id"] = subj_id
-            query = """
-                    INSERT INTO 'Students-Subjects' VALUES (:student_id, :subj_id);
-                    """
-            self._execute(query, record)
         return
         
     def get(self, student_name):
@@ -195,7 +165,7 @@ class Students(Collection):
         """Deletes student record from database."""
         # check if student exists
         if not self._is_exist(self._tblname, "student_name", student_name):
-            return "does not exist"
+            return False
 
         # retrieve student_id
         query = """
@@ -240,7 +210,9 @@ class Classes(Collection):
 
         # add class record
         query = f"""
-                INSERT INTO '{self._tblname}' VALUES (:class_name, :level);
+                INSERT INTO '{self._tblname}' (
+                    'class_name', 'level'
+                ) VALUES (:class_name, :level);
                 """
         self._execute(query, record)
         return
@@ -248,7 +220,7 @@ class Classes(Collection):
     def get_all(self, class_name):
         """Returns all students in the corresponding class."""
         # check if class exists
-        if not self._is_exist("Classes", "class_name", class_name):
+        if not self._is_exist(self._tblname, "class_name", class_name):
             return False
 
         # retrieve class_id
@@ -305,7 +277,102 @@ class Subjects(Collection):
     """
     def __init__(self):
         super().__init__("Subjects")
+
+    def add_student(self, record):
+        """Adds a student's subjects."""
+        # check if student exists
+        if self._is_exist("Students", "student_name", record["student_name"]):
+            return False
+
+        # check if each subject exists and retrieve subject_id
+        subj_list = record["subj_list"]
+        subj_id_list = []
+        for subj in subj_list:
+            query = f"""
+                    SELECT *
+                    FROM '{self._tblname}'
+                    WHERE subj_name = ?
+                    AND level = ?;
+                    """
+            values = tuple(subj.values())
+            row = self._return(query, values, multi=False)
+            if row is None:
+                return False
+            subj_id_list.append(row["subj_id"])
+            
+        # retrieve student_id
+        query = """
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?;
+                """
+        values = tuple(record["student_name"])
+        row = self._return(query, values, multi=False)
+        student_id = row["student_id"]
+
+        # add each student-subject record
+        for subj_id in subj_id_list:
+            record = {}
+            record["student_id"] = student_id
+            record["subj_id"] = subj_id
+            query = """
+                    INSERT INTO 'Students-Subjects' (
+                        'student_id', 'subj_id'
+                    ) VALUES (:student_id, :subj_id);
+                    """
+            self._execute(query, record)
+        return
+
+    def delete_student(self, record):
+        """Deletes a student's subject."""
+        # check if student exists
+        if not self._is_exists("Students", "student_name", record["student_name"]):
+            return False
+            
+        # check if subject exists and retrieve subject_id
+        query = f"""
+                SELECT *
+                FROM '{self._tblname}'
+                WHERE subj_name = ?
+                AND level = ?;
+                """
+        values = tuple(record["subj_name"], record["level"])
+        row = self._return(query, values, multi=False)
+        if row is None:
+            return False
+        subj_id = row["subj_id"]
+
+        # retrieve student_id
+        query = """
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?
+                """
+        values = tuple(record["student_name"])
+        row = self._return(query, values, multi=False)
+        student_id = row["student_id"]
         
+        # check if student takes that subject
+        query = """
+                SELECT *
+                FROM 'Students-Subjects'
+                WHERE student_id = ?
+                AND subj_id = ?
+                """
+        values = tuple(student_id, subj_id)
+        row = self._return(query, values, multi=False)
+        if row is None:
+            return False
+        
+        # delete student-subject record
+        query = f"""
+                DELETE FROM 'Students-Subjects'
+                WHERE student_id = ?
+                AND subj_id = ?;
+                """
+        self._execute(query, values)
+        return
+            
 
 class CCAs(Collection):
     """
@@ -328,7 +395,48 @@ class CCAs(Collection):
 
         # add CCA record
         query = f"""
-                INSERT INTO '{self._tblname}' VALUES (:cca_name, :type);
+                INSERT INTO '{self._tblname}' (
+                    'cca_name', 'type'
+                ) VALUES (:cca_name, :type);
+                """
+        self._execute(query, record)
+        return
+
+    def add_member(self, record):
+        """Adds a student to a CCA."""
+        # check if student exists
+        if not self._is_exists("Students", "student_name", record["student_name"]):
+            return False
+            
+        # check if CCA exists
+        if not self._is_exists(self._tblname, "cca_name", record["cca_name"]):
+            return False
+            
+        # retrieve student_id
+        query = """
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?;
+                """
+        values = tuple(record["student_name"])
+        row = self._return(query, values, multi=False)
+        record["student_id"] = row["student_id"]
+        
+        # retrieve cca_id
+        query = f"""
+                SELECT 'cca_id'
+                FROM '{self._tblname}'
+                WHERE cca_name = ?
+                """
+        values = tuple(record["cca_name"])
+        row = self._return(query, values, multi=False)
+        record["cca_id"] = row["cca_id"]   
+
+        # add student-cca record
+        query = """
+                INSERT INTO 'Students-CCAs' (
+                    'student_id', 'cca_id', 'role'
+                ) VALUES (:student_id, :cca_id, :role);
                 """
         self._execute(query, record)
         return
@@ -337,10 +445,7 @@ class CCAs(Collection):
         """Returns a student's CCA."""
         data = {}
         data["student_name"] = student_name
-        # check if student exists
-        if not self._is_exist("Students", "student_name", student_name):
-            return False
-            
+        
         # retrieve student_id
         query = """
                 SELECT 'student_id'
@@ -355,22 +460,30 @@ class CCAs(Collection):
         query = """
                 SELECT 'cca_id', 'role'
                 FROM 'Students-CCAs'
-                WHERE student_id = ?
+                WHERE student_id = ?;
                 """
         values = tuple(student_id)
         row = self._return(query, values, multi=False)
         cca_id = row["cca_id"]
         data["role"] = row["role"]
 
-        # check if CCA exists
-        if not self._is_exist("CCAs", "cca_id", cca_id):
+        # check if student is in Students-CCAs
+        query = """
+                SELECT *
+                FROM 'Students-CCAs'
+                WHERE student_id = ?
+                AND cca_id = ?;
+                """
+        values = tuple(student_id, cca_id)
+        row = self._return(query, values, multi=False)
+        if row is None:
             return False
             
         # retrive cca_name
         query = """
                 SELECT 'cca_name'
                 FROM 'CCAs'
-                WHERE cca_id = ?
+                WHERE cca_id = ?;
                 """
         values = tuple(cca_id)
         row = self._return(query, values)
@@ -422,36 +535,83 @@ class Activities(Collection):
 
         # add activity record
         query = f"""
-                INSERT INTO '{self._tblname}' VALUES (:activity_name, :start_date, :end_date, :description);
+                INSERT INTO '{self._tblname}' (
+                    'activity_name', 'start_date', 'end_date', 'description'
+                ) VALUES (:activity_name, :start_date, :end_date, :description);
                 """
         self._execute(query, record)
         return
+
+    def add_member(self, record):
+        """Adds a student to an activity."""
+        # check if student exists
+        if not self._is_exists("Students", "student_name", record["student_name"]):
+            return False
+            
+        # check if activity exists
+        if not self._is_exists(self._tblname, "activity_name", record["activity_name"]):
+            return False
+            
+        # retrieve student_id
+        query = """
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?;
+                """
+        values = tuple(record["student_name"])
+        row = self._return(query, values, multi=False)
+        record["student_id"] = row["student_id"]
         
+        # retrieve activity_id
+        query = f"""
+                SELECT 'activity_id'
+                FROM '{self._tblname}'
+                WHERE activity_name = ?
+                """
+        values = tuple(record["activity_name"])
+        row = self._return(query, values, multi=False)
+        record["activity_id"] = row["activity_id"]   
+
+        # add student-activity record
+        query = """
+                INSERT INTO 'Students-Activities' (
+                    'student_id', 'activity_id', 'role', 'award', 'hours'
+                ) VALUES (:student_id, :activity_id, :role, :award, :hours);
+                """
+        self._execute(query, record)
+        return
 
     def get(self, student_name):
         """Return a student's activity record."""
         data = {}
         data["student_name"] = student_name
         
-        # check if student exists
-        if not self._is_exist("Students", "student_name", student_name):
-            return False
-            
         # retrieve student_id
         query = f"""
                 SELECT 'student_id'
-                FROM "Students"
+                FROM 'Students'
                 WHERE student_name = ?;
                 """
         values = tuple(student_name)
         row = self._return(query, values, multi=False)
         student_id = row["student_id"]
+
+        # check if Student is in Students-Activities
+        query = """
+                SELECT *
+                FROM 'Students-Activities'
+                WHERE student_id = ?;
+                """
+        values = tuple(student_id)
+        row = self._return(query, values, multi=False)
+        if row is None:
+            return False
         
         # retrieve activity_id, role, award, hours
         query = f"""
                 SELECT 'activity_id', 'role', 'award', 'hours'
                 FROM 'Students-Activities'
-                WHERE student_id = ?
+                WHERE student_id = ?;
                 """
         values = tuple(student_id)
         row = self._return(query, values, multi=False)
@@ -459,10 +619,6 @@ class Activities(Collection):
         data["role"] = row["role"]
         data["award"] = row["award"]
         data["hours"] = row["hours"]
-        
-        # check if activity exists
-        if not self._is_exist(self._tblname, "activity_id", activity_id):
-            return False
         
         # retrieve activity_name
         query = f"""
