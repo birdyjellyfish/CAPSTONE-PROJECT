@@ -79,6 +79,10 @@ class Students(Collection):
         if self._is_exist(self._tblname, "student_name", record["student_name"]):
             return False
 
+        # check if class exists
+        if not self._is_exist("Classes", "class_name", record["class_name"]):
+            return False
+            
         # retrieve class_id
         query = """
                 SELECT 'class_id'
@@ -132,10 +136,10 @@ class Students(Collection):
 
         return data
 
-    def update(self, record):
+    def update(self, student_name, record):
         """Updates student record in database."""
         # check if student exists
-        if self._is_exist(self._tblname, "student_name", record["student_name"]):
+        if self._is_exist(self._tblname, "student_name", student_name):
             return False
             
         # retrieve class_id
@@ -144,20 +148,21 @@ class Students(Collection):
                 FROM 'Classes'
                 WHERE class_name = ?;
                 """
-        values = tuple(record["class_name"])
+        values = tuple(record["new_class_name"])
         row = self._return(query, values, False)
         class_id = row["class_id"]
         
         # update student record
         query = f"""
                 UPDATE '{self._tblname}' SET
-                    "age" = ?,
-                    "year_enrolled" = ?,
-                    "grad_year" = ?,
-                    "class_id" = ?,
+                    'student_name' = ?,
+                    'age' = ?,
+                    'year_enrolled' = ?,
+                    'grad_year' = ?,
+                    'class_id' = ?,
                 WHERE student_name = ?;
                 """
-        values = tuple(record["age"], record["year_enrolled"], record["grad_year"], class_id, record["student_name"])
+        values = tuple(record["new_student_name"], record["new_age"], record["new_year_enrolled"], record["new_grad_year"], class_id, student_name)
         self._execute(query, values)
         return
         
@@ -249,19 +254,20 @@ class Classes(Collection):
             data[item["student_id"]] = item["student_name"]
         return data
 
-    def update(self, record):
+    def update(self, class_name, record):
         """Updates class record in the database."""
         # check if class exists
-        if not self._is_exist(self._tblname, "class_name", record["class_name"]):
+        if not self._is_exist(self._tblname, "class_name", class_name):
             return False
 
         # update class record
         query = f"""
                 UPDATE '{self._tblname}' SET
+                    'class_name' = ?,
                     'level' = ?
                 WHERE class_name = ?;
                 """
-        values = tuple(record["level"], record["class_name"])
+        values = tuple(record["new_class_name"], record["new_level"], class_name)
         self._execute(query, values)
         return
 
@@ -326,7 +332,7 @@ class Subjects(Collection):
     def delete_student(self, record):
         """Deletes a student's subject."""
         # check if student exists
-        if not self._is_exists("Students", "student_name", record["student_name"]):
+        if not self._is_exist("Students", "student_name", record["student_name"]):
             return False
             
         # check if subject exists and retrieve subject_id
@@ -405,11 +411,11 @@ class CCAs(Collection):
     def add_member(self, record):
         """Adds a student to a CCA."""
         # check if student exists
-        if not self._is_exists("Students", "student_name", record["student_name"]):
+        if not self._is_exist("Students", "student_name", record["student_name"]):
             return False
             
         # check if CCA exists
-        if not self._is_exists(self._tblname, "cca_name", record["cca_name"]):
+        if not self._is_exist(self._tblname, "cca_name", record["cca_name"]):
             return False
             
         # retrieve student_id
@@ -440,8 +446,30 @@ class CCAs(Collection):
                 """
         self._execute(query, record)
         return
-
-    def get(self, student_name):
+        
+    def get(self, cca_name):
+            """Returns a CCA's details."""
+             # check if CCA exists
+            if not self._is_exist("CCAs", "cca_name", cca_name):
+                return None
+                
+            # retrieve CCA record
+            query = """
+                    SELECT *
+                    FROM 'CCAs'
+                    WHERE cca_name = ?;
+                    """
+            values = tuple(cca_name)
+            row = self._return(query, values, multi=False)
+            
+            # convert data to dictionary
+            field_names = row.keys()
+            data = {}
+            for i, elem in enumerate(field_names):
+                data[elem] = row[i]
+            return data
+        
+    def get_member(self, student_name):
         """Returns a student's CCA."""
         data = {}
         data["student_name"] = student_name
@@ -491,29 +519,124 @@ class CCAs(Collection):
 
         return data
 
-    def get_info(self, cca_name):
-        """Returns a CCA's details."""
-         # check if CCA exists
-        if not self._is_exist("CCAs", "cca_name", cca_name):
-            return None
-            
-        # retrieve CCA record
+    def update(self, cca_name, record):
+        """Updates an acitivty's record."""
+        # check if cca exists
+        if not self._is_exist(self._tblname, "cca_name", cca_name):
+            return False
+
+        # update cca record
+        query = f"""
+                UPDATE '{self._tblname}' SET
+                    'cca_name' = ?,
+                    'type' = ?,
+                WHERE cca_name = ?;
+                """
+        values = tuple(record["new_cca_name"], record["new_type"], cca_name)
+        self._execute(query, values)
+        return
+
+    def update_member(self, record):
+        """Updates a student's CCA record."""
+        # retrieve student_id
         query = """
-                SELECT *
-                FROM 'CCAs'
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?;
+                """
+        values = tuple(record["student_name"])
+        row = self._return(query, values, multi=False)
+        student_id = row["student_id"]
+        
+        # check if student in Students-CCAs
+        if not self._is_exist("Students-CCAs", "student_id", student_id):
+            return False
+            
+        # retrieve cca_id
+        query = f"""
+                SELECT 'cca_id'
+                FROM '{self_tblname}'
+                WHERE cca_name = ?;
+                """
+        values = tuple(record["cca_id"])
+        row = self._return(query, values, multi=False)
+        cca_id = row["cca_id"]
+
+        # update student-cca record
+        query = """
+                UPDATE 'Students-CCAs' SET
+                    'role' = ?
+                WHERE student_id = ?
+                AND cca_id = ?;
+                """
+        values = tuple(record["new_role"], student_id, cca_id)
+        self._execute(query, values)
+        return
+
+    def delete(self, cca_name):
+        """Deletes a CCA record."""
+        # check if CCA exists
+        if not self._is_exist(self._tblname, "cca_name", cca_name):
+            return False
+
+        # retrieve cca_id
+        query = f"""
+                SELECT 'cca_id'
+                FROM '{self._tblname}'
                 WHERE cca_name = ?;
                 """
         values = tuple(cca_name)
         row = self._return(query, values, multi=False)
+        cca_id = row["cca_id"]
+
+        # delete from Students-CCAs and CCAs table
+        tblnames = ["Students-CCAs", "CCAs"]
+        for tblname in tblnames:
+            query = f"""
+                    DELETE FROM '{tblname}'
+                    WHERE cca_id = ?;
+                    """
+            values = tuple(cca_id)
+            self._execute(query, values)
+        return
         
-        # convert data to dictionary
-        field_names = row.keys()
-        data = {}
-        for i, elem in enumerate(field_names):
-            data[elem] = row[i]
-        return data
+    def delete_member(self, student_name, cca_name):
+        """Deletes a student's CCA record"""
+        # retrieve student_id
+        query = """
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?;
+                """
+        values = tuple(record["student_name"])
+        row = self._return(query, values, multi=False)
+        student_id = row["student_id"]
+        
+        # check if student in Students-CCAs
+        if not self._is_exist("Students-CCAs", "student_id", student_id):
+            return False
+            
+        # retrieve cca_id
+        query = f"""
+                SELECT 'cca_id'
+                FROM '{self_tblname}'
+                WHERE cca_name = ?;
+                """
+        values = tuple(record["cca_id"])
+        row = self._return(query, values, multi=False)
+        cca_id = row["cca_id"]
 
+        # delete student-cca record
+        query = """
+                DELETE FROM 'Students-CCAs'
+                WHERE student_id = ?
+                AND cca_id = ?;
+                """
+        values = tuple(student_id, cca_id)
+        self._execute(query, values)
+        return
 
+        
 class Activities(Collection):
     """
     Activities Collection.
@@ -525,7 +648,6 @@ class Activities(Collection):
     """
     def __init__(self):
         super().__init__("Activities")
-
 
     def add(self, record):
         """Adds an activity record into the database."""
@@ -545,11 +667,11 @@ class Activities(Collection):
     def add_member(self, record):
         """Adds a student to an activity."""
         # check if student exists
-        if not self._is_exists("Students", "student_name", record["student_name"]):
+        if not self._is_exist("Students", "student_name", record["student_name"]):
             return False
             
         # check if activity exists
-        if not self._is_exists(self._tblname, "activity_name", record["activity_name"]):
+        if not self._is_exist(self._tblname, "activity_name", record["activity_name"]):
             return False
             
         # retrieve student_id
@@ -581,7 +703,29 @@ class Activities(Collection):
         self._execute(query, record)
         return
 
-    def get(self, student_name):
+    def get(self, activity_name):
+        """Returns an activity's details."""
+        # check if activity exists
+        if not self._is_exist("Activities", "activity_name", activity_name):
+            return False
+
+        # retrieve activity record
+        query = f"""
+                SELECT *
+                FROM '{self._tblname}'
+                WHERE activity_name = ?
+                """
+        values = tuple(activity_name)
+        row = self._execute(query, values, multi=False)
+
+        # convert data into dictionary
+        field_names = row.keys()
+        data = {}
+        for i, elem in enumerate(field_names):
+            data[elem] = row[i]
+        return data
+        
+    def get_member(self, student_name):
         """Return a student's activity record."""
         data = {}
         data["student_name"] = student_name
@@ -632,24 +776,123 @@ class Activities(Collection):
         
         return data
 
-    def get_info(self, activity_name):
-        """Returns an activity's details."""
+    def update(self, activity_name, record):
+        """Updates an acitivty's record."""
         # check if activity exists
-        if not self._is_exist("Activities", "activity_name", activity_name):
+        if not self._is_exist(self._tblname, "activity_name", activity_name):
             return False
 
-        # retrieve activity record
+        # update activity record
         query = f"""
-                SELECT *
+                UPDATE '{self._tblname}' SET
+                    'activity_name' = ?,
+                    'start_date' = ?,
+                    'end_date' = ?,
+                    'description' = ?
+                WHERE activity_name = ?;
+                """
+        values = tuple(record["new_activity_name"], record["new_start_date"], record["new_end_date"], record["new_description"], activity_name)
+        self._execute(query, values)
+        return
+
+    def update_member(self, record):
+        """Updates a student's activity record."""
+        # retrieve student_id
+        query = """
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?;
+                """
+        values = tuple(record["student_name"])
+        row = self._return(query, values, multi=False)
+        student_id = row["student_id"]
+        
+        # check if student in Students-Activities
+        if not self._is_exist("Students-Activities", "student_id", student_id):
+            return False
+            
+        # retrieve activity_id
+        query = f"""
+                SELECT 'activity_id'
+                FROM '{self_tblname}'
+                WHERE activity_name = ?;
+                """
+        values = tuple(record["activity_id"])
+        row = self._return(query, values, multi=False)
+        activity_id = row["activity_id"]
+
+        # update student-activity record
+        query = """
+                UPDATE 'Students-Activities' SET
+                    'role' = ?,
+                    'award' = ?,
+                    'hours' = ?
+                WHERE student_id = ?
+                AND activity_id = ?;
+                """
+        values = tuple(record["new_role"], record["new_award"], record["new_hours"] student_id, activity_id)
+        self._execute(query, values)
+        return
+
+    def delete(self, cca_name):
+        """Deletes an activity record."""
+        # check if activity exists
+        if not self._is_exist(self._tblname, "activity_name", activity_name):
+            return False
+
+        # retrieve activity_id
+        query = f"""
+                SELECT 'activity_id'
                 FROM '{self._tblname}'
-                WHERE activity_name = ?
+                WHERE activity_name = ?;
                 """
         values = tuple(activity_name)
-        row = self._execute(query, values, multi=False)
+        row = self._return(query, values, multi=False)
+        activity_id = row["activity_id"]
 
-        # convert data into dictionary
-        field_names = row.keys()
-        data = {}
-        for i, elem in enumerate(field_names):
-            data[elem] = row[i]
-        return data
+        # delete from Students-Activities and Activities table
+        tblnames = ["Students-Activities", "Activities"]
+        for tblname in tblnames:
+            query = f"""
+                    DELETE FROM '{tblname}'
+                    WHERE activity_id = ?;
+                    """
+            values = tuple(activity_id)
+            self._execute(query, values)
+        return
+        
+    def delete_member(self, student_name, cca_name):
+        """Deletes a student's activity record"""
+        # retrieve student_id
+        query = """
+                SELECT 'student_id'
+                FROM 'Students'
+                WHERE student_name = ?;
+                """
+        values = tuple(record["student_name"])
+        row = self._return(query, values, multi=False)
+        student_id = row["student_id"]
+        
+        # check if student in Students-Activities
+        if not self._is_exist("Students-Activities", "student_id", student_id):
+            return False
+            
+        # retrieve activity_id
+        query = f"""
+                SELECT 'activity_id'
+                FROM '{self_tblname}'
+                WHERE activity_name = ?;
+                """
+        values = tuple(record["activity_id"])
+        row = self._return(query, values, multi=False)
+        activity_id = row["activity_id"]
+
+        # delete student-activity record
+        query = """
+                DELETE FROM 'Students-Activities'
+                WHERE student_id = ?
+                AND activity_id = ?;
+                """
+        values = tuple(student_id, activity_id)
+        self._execute(query, values)
+        return 
