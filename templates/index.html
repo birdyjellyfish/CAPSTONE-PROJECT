@@ -1,27 +1,19 @@
 <html>
 <head>
     <title>Student CCA Portal Home</title>
-    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/styles.css')}}">
+    {% include "head.html" %}
 </head>
 <body>
-    <!-- <div class='container'>
-        <p>
-            <span class='highlight-white'>What would you like to do today?</span>
-        </p>
-        <span class='highlight-pink'>I would like to <a href="/add">ADD</a></span><br>
-        <span class='highlight-pink'>I would like to <a href="/view">VIEW</a></span><br>
-        <span class='highlight-pink'>I would like to <a href="/edit">EDIT</a></span>
-        
-        {% include 'footer.html' %}
-    </div>
-
-    
-     -->
-
 {% include 'header.html' %}
-    <div class='container'>
-    <span class='highlight-white'>YOU WON'T LAST 30 SECONDS PLAYING THIS GAME</span>
-    
+    <div class='container custom-select'>
+        <span class='highlight-purple'>What would you like to do today?</span> 
+        <br><br>
+        <select name="forma" onchange="javascript: location.href = this.value;">
+        <option value="">Make a Selection</option>
+        <option value="/add">Add</option>
+        <option value="/view">View</option>
+        <option value="/edit">Edit</option>
+    </select>
     </div>
 </body>
 </html>

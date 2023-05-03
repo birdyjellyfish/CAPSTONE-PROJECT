@@ -1,23 +1,25 @@
 <html>
 <head>
     <title>Student CCA Portal Add page</title>
-    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/styles.css')}}">
+    {% include "head.html" %}
 </head>
 
 <body>
     {% include 'header.html' %}
     <div class='container'>
-    <span class='highlight-blue'>{{title}}</span>
+    <span class='highlight-purple'>{{title}}</span>
     <br>
         
     {% if page_type == 'new' %}
     <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
     </br>
+        <div class='custom-select'>
         <select name='choice'>
             {% for item in choices %}
             <option value = "{{item}}">{{item}}</option>
             {% endfor %}
         </select>
+        </div>
     <br>
         <input type='submit' value='Submit'>
     </form>
@@ -31,9 +33,9 @@
     <tr>
         <td><span class='highlight-pink'><label for='{{key}}'>{{key}}:</label></span></td>
         <td><input id='{{key}}' type='{{tdtype}}' name='{{key}}' value='{{value}}'><span class='highlight-purple'>{{value}}</span></td>
-    </tr>
-    <br>   
+    </tr>   
     {% endfor %}
+    <br>
     </table>
     <br>
     <input type='submit' value='{{button}}'>     
@@ -53,7 +55,6 @@
     {% endif %}
 
 
-    {% include 'footer.html' %}
     </div>
         
 </body>

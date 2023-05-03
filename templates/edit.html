@@ -1,7 +1,7 @@
 <html>
 <head>
     <title>Student CCA Portal Edit page</title>
-    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/styles.css')}}">
+    {% include "head.html" %}
 </head>
 <body>
     {% include 'header.html' %}
@@ -29,9 +29,16 @@
                 <td><span class='highlight-pink'><input value='{{choice}}' type='hidden' name='choice'>Student Name:</span></td>
                 <td><input id='name' type='text' name='name'></td>
             </tr>
+            <tr>
+                <td><span class='highlight-pink'><input value='{{choice}}' type='hidden' name='choice'>Student Name:</span></td>
+                <td><input id='name' type='text' name='name'></td>
+            </tr>
     </table>
+    {% if error %}
+    <span style='color: red'>Error: {{error}}</span>
+    {% endif %}
     <br>
-    <input type='submit' value='search'>
+    <input type='submit' value='Search'>
     </form>
     {% endif %}
 
@@ -66,7 +73,6 @@
         </tr>
     </table>
     {% endif %}
-    {% include 'footer.html' %}
     </div>
 </body>
 </html>
