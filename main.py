@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 from front import app
 
-#app = Flask(__name__)
+# app = Flask(__name__)
 
 # @app.route('/')
 # def index():
@@ -201,6 +201,10 @@ from front import app
 #                           key = key,
 #                           name = name,
 #                           new = new)
+
+# @app.route('/notfound')
+# def not_found():
+#     return render_template('notfound.html')
 
 if __name__ == '__main__':
     app.run('0.0.0.0')
