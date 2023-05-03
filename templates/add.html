@@ -25,7 +25,7 @@
     </form>
     {% endif %}    
 
-    {% if page_type == 'form' %}
+    {% if page_type in ('form', 'confirm') %}
     
     <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
     <table>
@@ -38,11 +38,11 @@
     <br>
     </table>
     <br>
-    <input type='submit' value='{{button}}'>     
-        
+    
+    <input type='submit' value='{{button}}'>
     </form>
     {% endif %}
-
+    
     {% if page_type == 'success' %}
         <br>
     {% for key, value in form_data.items() %}
