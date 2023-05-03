@@ -27,13 +27,16 @@ def add():
         if choice == 'CCA':
             #check if the person chose cca or actiity then render the appropriate stuff
             #later get the data back from the form again and use functions to add it to the tables
-            form_data = {'Student Name': '', 'Student CCA': ''}
-            title = 'Please enter the student name and student CCA'
+            form_data = {'CCA Name': '', 'CCA Type': ''}
+            title = 'Add CCA:'
             page_type = 'form'
             form_meta = {'action': '/add?confirm', 'method': 'post'}
         else:
-            form_data = {'Student Name': '', 'Student Activity': ''}
-            title = 'Please enter the student name and student activity'
+            form_data = {'Activity Name': '', 
+                         'Start Date': '',
+                        'Description': '',
+                        'End Date': ''}
+            title = 'Add Activity:'
             page_type = 'form'
             form_meta = {'action': '/add?confirm', 'method': 'post'}
 
@@ -44,10 +47,9 @@ def add():
         title = 'Please confirm the following details'
         tdtype = 'hidden'
         button = 'Confirm'
-        form_data = {
-            f'{keys[0]}': request.form[f'{keys[0]}'],
-            f'{keys[1]}': request.form[f'{keys[1]}']
-        }
+        form_data = {}
+        for i in keys:
+            form_data[f'{i}'] = request.form[f'{i}']
         form_meta = {'action': '/add?result', 'method': 'post'}
 
     if 'result' in request.args:
@@ -58,10 +60,9 @@ def add():
         keys = list(request.form.keys())
         page_type = 'success'
         title = 'You have successfully added the following record!'
-        form_data = {
-            f'{keys[0]}': request.form[f'{keys[0]}'],
-            f'{keys[1]}': request.form[f'{keys[1]}']
-        }
+        form_data = {}
+        for i in keys:
+            form_data[f'{i}'] = request.form[f'{i}']
 
     # else:
     # page_type = ''
