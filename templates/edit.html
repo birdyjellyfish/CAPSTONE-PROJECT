@@ -33,9 +33,6 @@
             {% endfor %}
             <input type='hidden' name='action' value='{{action}}'>
     </table> 
-    {% if error %}
-    <span style='color: red'>Error: {{error}}</span>
-    {% endif %}
     <br>
     {% if action != 'add' %}
     <input type='submit' value='Search'>
@@ -62,7 +59,10 @@
             {% endfor %}
     </table> 
         <input type='hidden' name='action' value='{{action}}'>
-        <br>
+    {% if error %}
+    <span style='color: red'>Error: {{error}}</span>
+    {% endif %}
+    <br>
     <input type='submit' value='Confirm'>    
     {% endif %} 
 

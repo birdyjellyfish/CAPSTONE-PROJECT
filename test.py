@@ -1,8 +1,5 @@
 from storage import Students, Classes, Subjects, CCAs, Activities
 
-ccas = CCAs()
+from storage import Students, Classes, Subjects, CCAs, Activities
 students = Students()
-classes = Classes()
-activities = Activities()
-print(ccas.get_student('Kieran'))
-print(classes.get('22S27'))
+students.display_all()
