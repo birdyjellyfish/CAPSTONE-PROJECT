@@ -684,22 +684,7 @@ class Activities(Collection):
         
     def get_member(self, student_name):
         """Return a student's activity record."""
-        data = {}
-        data["student_name"] = student_name
-        
-        # retrieve student_id
-        student_id = self._retrieve_id("Students", student_name, "student_name", "student_id")
-
-        # check if Student is in Students-Activities
-        query = """
-                SELECT *
-                FROM 'Students-Activities'
-                WHERE student_id = ?;
-                """
-        values = tuple(student_id)
-        row = self._return(query, values, multi=False)
-        if row is None:
-            return False
+        data = []
             
         # retrieve activity_id, role, award, hours, activity_name
         query = """
@@ -708,19 +693,29 @@ class Activities(Collection):
                     'Students-Activities'.'role',
                     'Students-Activities'.'award',
                     'Students-Activities'.'hours'
-                FROM 'Students-Activities'
+                FROM 'Students'
+                INNER JOIN 'Students-Activities'
+                ON 'Students'.'student_id' = 'Student-Activties'.'student_id'
                 INNER JOIN 'Activities'
-                ON 'Activities'.'activity_id' = 'Student-Activties'.'activity_id'
-                WHERE student_id = ?
+                ON 'Activities'.'activity_id' = 'Students-Actitivies'.'activity_id'
+                WHERE student_name = ?;
                 """
-        values = tuple(student_id)
-        row = self._return(query, values, multi=False)
-        activity_id = row["activity_id"]
-        data["role"] = row["role"]
-        data["award"] = row["award"]
-        data["hours"] = row["hours"]
-        data["activity_name"] = row["activity_name"]
-        
+        values = tuple(student_name)
+        row = self._return(query, values, multi=True)
+
+        # check if student has an activity
+        if row == []:
+            return False
+
+        for activity in row:
+            record = {}
+            record["student_name"] = student_name
+            record["role"] = row["role"]
+            record["award"] = row["award"]
+            record["hours"] = row["hours"]
+            record["activity_name"] = row["activity_name"]
+            data.append(record)
+            
         return data
 
     def update(self, activity_name, record):
