@@ -133,10 +133,6 @@ class Students(Collection):
         
     def get(self, student_name):
         """Returns a student's record."""
-        # check if student exists
-        if not self._is_exist("Students", "student_name", student_name):
-            return False
-
         #retrieve student record
         query = f"""
                 SELECT 
@@ -151,36 +147,17 @@ class Students(Collection):
                 """
         values = (student_name,)
         row = self._return(query, values, multi=False)
+
+        # check if student exists
+        if row is None:
+            return False
+        
         data = {}
         data["student_name"] = student_name
         data["age"] = row["age"]
         data["year_enrolled"] = row["year_enrolled"]
         data["grad_year"] = row["grad_year"]
         data['class_name'] = row["class_name"]
-        
-        # #Old code
-        # # retrieve student record
-        # query = f"""
-        #         SELECT 
-        #         FROM '{self._tblname}'
-        #         WHERE student_name = ?;
-        #         """
-        # values = (student_name,)
-        # row = self._return(query, values, multi=False)
-        # data["age"] = row["age"]
-        # data["year_enrolled"] = row["year_enrolled"]
-        # data["grad_year"] = row["grad_year"]
-        # class_id = row["class_id"]
-        
-        # # retrieve class_name
-        # query = f"""
-        #         SELECT *
-        #         FROM 'Classes'
-        #         WHERE class_id = ?;
-        #         """
-        # values = (class_id,)
-        # row = self._return(query, values, multi=False)
-        # data["class_name"] = row["class_name"]
 
         return data
 
@@ -235,7 +212,7 @@ class Classes(Collection):
     Methods:
     --------
     add(record)
-    get_all(class_name)
+    get(class_name)
     update(class_name, record)
     """
     def __init__(self):
@@ -256,21 +233,20 @@ class Classes(Collection):
         self._execute(query, record)
         return
 
-    def get_all(self, class_name):
+    def get(self, class_name):
         """Returns all students in the corresponding class."""
-        # retrieve class_id
-        class_id = self._retrieve_id('Classes', class_name, 'class_name', 'class_id')
-        if not class_id:
-            return False
-        
         # retrieve student_id and student_name
         query = """
-                SELECT student_id, student_name
+                SELECT 
+                    'Students'.'student_id',
+                    'Students'.'student_name'
                 FROM 'Students'
-                WHERE class_id = ?
+                INNER JOIN 'Classes'
+                ON 'Students'.'class_id' = 'Classes'.'class_id'
+                WHERE 'Classes'.'class_name' = ?
                 ORDER BY 'student_id' ASC;
                 """
-        values = (class_id,)
+        values = (class_name,)
         row = self._return(query, values, multi=True)
 
         # convert data to dictionary (key=id, value=student_name)
@@ -419,13 +395,13 @@ class CCAs(Collection):
     Methods:
     --------
     add(record)
-    add_member(record)
+    add_student(record)
     get(cca_name)
-    get_member(student_name)
+    get_student(student_name)
     update(cca_name, record)
-    update_member(record)
+    update_student(record)
     delete(cca_name)
-    delete_member(student_name, cca_name)
+    delete_student(student_name, cca_name)
     """
     def __init__(self):
         super().__init__("CCAs")
@@ -445,7 +421,7 @@ class CCAs(Collection):
         self._execute(query, record)
         return
 
-    def add_member(self, record):
+    def add_student(self, record):
         """Adds a student to a CCA."""
         # check if student/cca exists and retrive ids
         record["student_id"] = self._retrieve_id("Students", record["student_name"], "student_name", "student_id")
@@ -489,7 +465,7 @@ class CCAs(Collection):
                 data[elem] = row[i]
             return data
         
-    def get_member(self, student_name):
+    def get_student(self, student_name):
         """Returns a list of dict of student's CCAs"""
         data = []
         
@@ -537,7 +513,7 @@ class CCAs(Collection):
         self._execute(query, values)
         return
 
-    def update_member(self, record):
+    def update_student(self, record):
         """Updates a student's CCA record (update role only."""
         # retrieve student_id
         student_id = self._retrieve_id("Students", record["student_name"], "student_name", "student_id")
@@ -579,7 +555,7 @@ class CCAs(Collection):
             self._execute(query, values)
         return
         
-    def delete_member(self, student_name, cca_name):
+    def delete_student(self, student_name, cca_name):
         """Deletes a student's CCA record"""
         # retrieve student_id
         student_id = self._retrieve_id("Students", record["student_name"], "student_name", "student_id")
@@ -609,13 +585,13 @@ class Activities(Collection):
     Methods:
     --------
     add(record)
-    add_member(record)
+    add_student(record)
     get(activity_name)
-    get_member(student_name)
+    get_student(student_name)
     update(activity_name, record)
-    update_member(record)
+    update_student(record)
     delete(activity_name)
-    delete_member(student_name, activity_name)
+    delete_student(student_name, activity_name)
     """
     def __init__(self):
         super().__init__("Activities")
@@ -635,7 +611,7 @@ class Activities(Collection):
         self._execute(query, record)
         return
 
-    def add_member(self, record):
+    def add_student(self, record):
         """Adds a student to an activity."""
         # check if student exists
         if not self._is_exist("Students", "student_name", record["student_name"]):
@@ -682,7 +658,7 @@ class Activities(Collection):
             data[elem] = row[i]
         return data
         
-    def get_member(self, student_name):
+    def get_student(self, student_name):
         """Return a student's activity record."""
         data = []
             
@@ -737,7 +713,7 @@ class Activities(Collection):
         self._execute(query, values)
         return
 
-    def update_member(self, record):
+    def update_student(self, record):
         """Updates a student's activity record."""
         # retrieve student_id
         student_id = self._retrieve_id("Students", record["student_name"], "student_name", "student_id")
@@ -782,7 +758,7 @@ class Activities(Collection):
             self._execute(query, values)
         return
         
-    def delete_member(self, student_name, activity_name):
+    def delete_student(self, student_name, activity_name):
         """Deletes a student's activity record"""
         # retrieve student_id
         student_id = self._retrieve_id("Students", student_name, "student_name", "student_id")
