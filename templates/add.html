@@ -31,7 +31,7 @@
     <table>
     {% for key, value in form_data.items() %}
     <tr>
-        <td><span class='highlight-pink'><label for='{{key}}'>{{key}}:</label></span></td>
+        <td><span class='highlight-pink'><label for='{{key}}'>{{key}}</label></span></td>
         <td><input id='{{key}}' type='{{tdtype}}' name='{{key}}' value='{{value}}'><span class='highlight-purple'>{{value}}</span></td>
     </tr>   
     {% endfor %}
@@ -53,7 +53,7 @@
     <table>
     {% for key, value in form_data.items() %}
     <tr>
-        <td><span class='highlight-pink'>{{key}}:</span></td>
+        <td><span class='highlight-pink'>{{key}}</span></td>
         <td><span class='highlight-purple'>{{value}}</span></td>
     </tr>
     <br>    

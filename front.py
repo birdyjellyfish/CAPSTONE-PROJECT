@@ -133,6 +133,7 @@ def view():
     choices = ['Student', 'Class', 'CCA', 'Activity']
     form_meta = {'action': '/view?view', 'method': 'get'}
     form_data = {'choice': ''}
+    table_header = {}
     data = {}
     choice = ''
     key = ''
@@ -142,7 +143,7 @@ def view():
     if request.args.get('choice') in choices:
         choice = request.args.get('choice')
         page_type = 'search'
-        title = f'Please enter the {choice} you would like to search for:'
+        title = f'Which {choice} you would like to search for?'
         ## .get the appropriate data from idk where juan pls help
         form_meta = {'action': '/view?searched', 'method': 'post'}
 
@@ -152,12 +153,29 @@ def view():
         form_data = dict(request.form)
         # key is Student Class CCA or Activity
         if key == 'Student':
+            table_header = {'student_name': 'Student Name',
+                            'age': 'Age',
+                            'year_enrolled': 'Year Enrolled',
+                           'grad_year': 'Graduation Year',
+                           'class_name': 'Class',
+                           'student_id': 'Student ID'}
             data = students.get(form_data[key])
         elif key == 'Class':
-            data = classes.get(form_data[key])
+            table_header = {'class_name': 'Class',
+                            'level': 'Level',
+                           'class_id': 'Class ID'}
+            data = classes.get_info(form_data[key])
         elif key == 'CCA':
+            table_header = {'cca_name': 'CCA Name',
+                            'type': 'Type',
+                           'cca_id': 'CCA ID'}
             data = ccas.get(form_data[key])
         else:
+            table_header = {'activity_name': 'Activity Name',
+                            'start_date': 'Start Date',
+                           'end_date': 'End Date',
+                           'description': 'Description',
+                           'activity_id': 'Activity ID'}
             data = activities.get(form_data[key])
 
         if data:  # if in database
@@ -180,7 +198,8 @@ def view():
                            title=title,
                            choice=choice,
                            key=key,
-                           error=error)
+                           error=error,
+                           table_header=table_header)
 
 
 @app.route('/edit', methods=['GET', 'POST'])
