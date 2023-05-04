@@ -1,0 +1,35 @@
+<br>
+    <table>
+        <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
+            {% if action == 'add'%}
+            <tr>
+                <td><span class='highlight-pink'>Student Name</span></td>
+                <td><span class='highlight-pink'>{{form_data['Student Name']}}</span></td>
+            </tr>
+            <tr>
+                <td><span class='highlight-pink'>{{activity}}</span></td>
+            </tr>
+            {% endif %}
+            {% if action == 'nope'%}
+            <tr>
+                <td><span class='highlight-pink'>Student Name</span></td>
+                <td><span class='highlight-pink'><input type='hidden' name='choice' value='{{choice}}'>{{choice}}</span></td>
+            </tr>
+            <tr>
+                <td><span class='highlight-pink'><input name='name' type='hidden' value='{{form_data.keys()|join("")}}'>{{form_data.keys()|join("")}}</span></td>
+                <td><input id='edit' type='text' name='edit' value="{{form_data.values()|join('')}}"></td>
+            </tr>
+    </table>
+        <br>
+form_data = {student name: '', cca/act:''}
+request.form['student name'] = kaelin
+request.form['cca/act'] = 'band'
+<table>
+    {% for key, value in form_data.items() %}
+    <tr>
+        <td><span class='highlight-pink'><label for='{{key}}'>{{key}}:</label></span></td>
+        <td><input id='{{key}}' type='{{tdtype}}' name='{{key}}' value='{{value}}'><span class='highlight-purple'>{{value}}</span></td>
+    </tr>   
+    {% endfor %}
+    <br>
+    </table>
