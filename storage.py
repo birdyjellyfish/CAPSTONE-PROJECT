@@ -135,7 +135,8 @@ class Students(Collection):
         """Returns a student's record."""
         #retrieve student record
         query = f"""
-                SELECT 
+                SELECT
+                    'Students'.'student_name',
                     'Students'.'age',
                     'Students'.'year_enrolled',
                     'Students'.'grad_year',
@@ -143,9 +144,9 @@ class Students(Collection):
                 FROM '{self._tblname}'
                 INNER JOIN 'Classes'
                 ON 'Students'.'class_id' = 'Classes'.'class_id'
-                WHERE student_name = ?;
+                WHERE student_name LIKE ?;
                 """
-        values = (student_name,)
+        values = ('%' + student_name + '%',)
         row = self._return(query, values, multi=False)
 
         # check if student exists
@@ -153,7 +154,7 @@ class Students(Collection):
             return False
         
         data = {}
-        data["student_name"] = student_name
+        data["student_name"] = row['student_name']
         data["age"] = row["age"]
         data["year_enrolled"] = row["year_enrolled"]
         data["grad_year"] = row["grad_year"]
@@ -180,7 +181,7 @@ class Students(Collection):
                     'year_enrolled' = ?,
                     'grad_year' = ?,
                     'class_id' = ?
-                WHERE student_name = ?;
+                WHERE student_name LIKE ?;
                 """
         values = (record["new_student_name"], record["new_age"], record["new_year_enrolled"], record["new_grad_year"], class_id, student_name,)
         self._execute(query, values)
@@ -423,6 +424,7 @@ class CCAs(Collection):
     add_student(record)
     get(cca_name)
     get_student(student_name)
+    get_all(cca_name)
     update(cca_name, record)
     update_student(record)
     delete(cca_name)
@@ -478,7 +480,7 @@ class CCAs(Collection):
             query = """
                     SELECT *
                     FROM 'CCAs'
-                    WHERE cca_name = ?;
+                    WHERE cca_name LIKE ?;
                     """
             values = (cca_name,)
             row = self._return(query, values, multi=False)
@@ -506,7 +508,7 @@ class CCAs(Collection):
                 ON 'Students'.'student_id' = 'Students-CCAS'.'student_id'
                 INNER JOIN CCAs
                 ON 'CCAs'.'cca_id' = 'Students-CCAs'.'cca_id'
-                WHERE student_name = ?;
+                WHERE student_name LIKE ?;
                 """
         # values = tuple(student_id)
         row = self._return(query, (student_name,), multi=True)
@@ -534,7 +536,7 @@ class CCAs(Collection):
                 UPDATE '{self._tblname}' SET
                     'cca_name' = ?,
                     'type' = ?
-                WHERE cca_name = ?;
+                WHERE cca_name LIKE ?;
                 """
         values = (record["new_cca_name"], record["new_type"], cca_name)
         self._execute(query, values)
@@ -670,7 +672,7 @@ class Activities(Collection):
         query = f"""
                 SELECT *
                 FROM '{self._tblname}'
-                WHERE activity_name = ?
+                WHERE activity_name LIKE ?
                 """
         values = tuple(activity_name)
         row = self._execute(query, values, multi=False)
@@ -698,7 +700,7 @@ class Activities(Collection):
                 ON 'Students'.'student_id' = 'Students-Activities'.'student_id'
                 INNER JOIN 'Activities'
                 ON 'Activities'.'activity_id' = 'Students-Activities'.'activity_id'
-                WHERE student_name = ?;
+                WHERE student_name LIKE ?;
                 """
         values = (student_name,)
         row = self._return(query, values, multi=True)
@@ -731,7 +733,7 @@ class Activities(Collection):
                     'start_date' = ?,
                     'end_date' = ?,
                     'description' = ?
-                WHERE activity_name = ?;
+                WHERE activity_name LIKE ?;
                 """
         values = (record["new_activity_name"], record["new_start_date"], record["new_end_date"], record["new_description"], activity_name)
         self._execute(query, values)
