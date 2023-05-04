@@ -197,7 +197,8 @@ input[type=button], input[type=submit], input[type=reset] {
   cursor: pointer;
   border-radius: 8px;
 }
- 
+
+
 /* The container must be positioned relative: */
 /* .custom-select {
   position: relative;

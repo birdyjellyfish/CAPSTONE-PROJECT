@@ -21,7 +21,7 @@
         </select>
         </div>
     <br>
-        <input type='submit' value='Submit'>
+        <input type='submit' value='Next'>
     </form>
     {% endif %}    
 
@@ -40,18 +40,22 @@
     <br>
     
     <input type='submit' value='{{button}}'>
+    {% if page_type == 'confirm' %}
+    <input type="submit" value="No" onclick="history.back()">
+    {% endif %}
     </form>
     {% endif %}
     
     {% if page_type == 'success' %}
-        <br>
+    <table>
     {% for key, value in form_data.items() %}
     <tr>
-        <td><span class='highlight-pink'>{{key}}:&nbsp;</span></td>
+        <td><span class='highlight-pink'>{{key}}:</span></td>
         <td><span class='highlight-purple'>{{value}}</span></td>
     </tr>
     <br>    
     {% endfor %}
+    </table>
     {% endif %}
 
 
