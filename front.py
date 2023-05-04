@@ -10,21 +10,23 @@ students = Students()
 
 app = Flask(__name__)
 
+
 def validate_date(date: str):
     """Validate a given date based on ISO 8601 YYYY-MM-DD format"""
     date = date.strip()
-    
+
     format = "%Y-%m-%d"
     try:
         res = bool(datetime.strptime(date, format))
     except ValueError:
         res = False
-    
+
     if res:
         year, month, day = date.split('-')
         if len(year) == 4 and len(month) == 2 and len(day) == 2:
             return True
     return False
+
 
 def has_error(data: dict):
     '''
@@ -32,10 +34,11 @@ def has_error(data: dict):
     Returns an error message for the last value that is empty, otherwise returns False
     '''
     for key, value in data.items():
-            data[key] = value.strip() #remove accidental whitespace
-            if not value:
-                return f'Please do not leave the {key} empty'
+        data[key] = value.strip()  #remove accidental whitespace
+        if not value:
+            return f'Please do not leave the {key} empty'
     return False
+
 
 @app.route('/')
 def index():
@@ -68,45 +71,45 @@ def add():
             page_type = 'form'
             form_meta = {'action': '/add?confirm', 'method': 'post'}
         else:
-            form_data = {'Activity Name': '', 
-                         'Start Date': '',
-                        'Description': '',
-                        'End Date': ''}
+            form_data = {
+                'Activity Name': '',
+                'Start Date': '',
+                'Description': '',
+                'End Date': ''
+            }
             title = 'Add Activity:'
             page_type = 'form'
             form_meta = {'action': '/add?confirm', 'method': 'post'}
 
-    if 'confirm' in request.args: 
+    if 'confirm' in request.args:
         page_type = 'form'
         title = 'Please confirm the following details'
         tdtype = 'text'
         button = 'Submit'
         form_data = dict(request.form)
         error = has_error(form_data)
-        if 'Activity Name' in form_data.keys(): # validate date if activity
+        if 'Activity Name' in form_data.keys():  # validate date if activity
             if not form_data['End Date']:
                 error = 'Please ensure the date is in the correct format'
 
-        if error: # if there is an error, return to new form page
+        if error:  # if there is an error, return to new form page
             form_meta = {'action': '/add?confirm', 'method': 'post'}
-        else: # otherwise, move on
+        else:  # otherwise, move on
             form_meta = {'action': '/add?result', 'method': 'post'}
             tdtype = 'hidden'
             button = 'Yes'
-            
+
     if 'result' in request.args:
-        ## check if record is present       
+        ## check if record is present
         form_data = dict(request.form)
-        if ccas.add({'cca_name':form_data['CCA Name'], 'type':form_data['CCA Type']}) != False: #will return False if cca already exists
+        if ccas.add({
+                'cca_name': form_data['CCA Name'],
+                'type': form_data['CCA Type']
+        }) != False:  #will return False if cca already exists
             page_type = 'success'
             title = 'You have successfully added the following record!'
         else:
-            page_type = 'form'
-            form_meta = {'action': '/add?confirm', 'method': 'post'}
-            error = f'ERROR! The CCA {form_data["CCA Name"]} already exists'
-            button = 'Confirm'
-            tdtype = 'hidden'
-
+            title = f'ERROR! The CCA {form_data["CCA Name"]} already exists'
     # else:
     # page_type = ''
     # name = request.form['Student Name']
@@ -156,12 +159,12 @@ def view():
             data = ccas.get(form_data[key])
         else:
             data = activities.get(form_data[key])
-            
-        if data: # if in database
+
+        if data:  # if in database
             title = f'{key}: {form_data[key]}'
             page_type = 'result'
-             # get from database
-        else: # if not in database, user will re-enter the form
+            # get from database
+        else:  # if not in database, user will re-enter the form
             page_type = 'search'
             error = f'{key} does not exist'
             choice = key
@@ -184,7 +187,11 @@ def view():
 def edit():
     page_type = 'new'
     title = 'What would you like to edit?'
-    choices = ['Add CCA Member', 'Add Activity Participant', 'Edit CCA Member', 'Edit Activity Participant', 'Remove CCA Member', 'Remove Activity Participant']
+    choices = [
+        'Add CCA Member', 'Add Activity Participant', 'Edit CCA Member',
+        'Edit Activity Participant', 'Remove CCA Member',
+        'Remove Activity Participant'
+    ]
     form_meta = {'action': '/edit?edit', 'method': 'get'}
     form_data = {'Student Name': ''}
     choice = ''
@@ -192,12 +199,14 @@ def edit():
     error = ''
     type = ''
     action = 'remove'
-    tdtype='text'
+    tdtype = 'text'
 
     if request.args.get('choice') in choices:
         choice = request.args.get('choice')
         page_type = 'search'
-        type = 'CCA' if choice in ['Add CCA Member', 'Edit CCA Member', 'Remove CCA Member'] else 'Activity'
+        type = 'CCA' if choice in [
+            'Add CCA Member', 'Edit CCA Member', 'Remove CCA Member'
+        ] else 'Activity'
         if choice in ['Add CCA Member', 'Add Activity Participant']:
             action = 'add'
             form_data['Role'] = ''
@@ -205,12 +214,12 @@ def edit():
                 form_data['Award'] = ''
                 form_data['Hours'] = ''
         elif choice in ['Edit CCA Member', 'Edit Activity Participant']:
-            action  = 'edit'
+            action = 'edit'
         # action will remain as removed if its remove cca member/remove activity participant
         form_data[type] = ''
         title = f'Please enter the Student Name and {type}'
         form_meta = {'action': '/edit?searched', 'method': 'post'}
-        
+
     if 'searched' in request.args:
         action = request.form['action']
         page_type = 'verify'
@@ -219,18 +228,19 @@ def edit():
         error = has_error(form_data)
         type = 'Activity' if 'Hours' in form_data.keys() else 'CCA'
 
-        if False: # if student does not exist
+        if False:  # if student does not exist
             error = 'Student does not exist'
         if error:
             form_meta = {'action': '/edit?searched', 'method': 'post'}
         else:
             if action != 'add':
-                form_data['Role'] ='?'
+                form_data['Role'] = '?'
                 if type == 'Activity':
                     form_data['Award'] = '?'
-                    form_data['Hours'] = '?' # those question mark stuff get from database
+                    form_data[
+                        'Hours'] = '?'  # those question mark stuff get from database
             form_meta = {'action': '/edit?success', 'method': 'post'}
-            
+
         if action == 'add':
             title = 'Please confirm that you would like to add the following'
             tdtype = 'hidden'
@@ -239,7 +249,6 @@ def edit():
         else:
             title = 'Please confirm that you would like to delete the following record'
             tdtype = 'hidden'
-        
 
     if 'success' in request.args:
         action = request.form['action']
@@ -256,7 +265,7 @@ def edit():
             # edit new data
         elif action == 'remove':
             word = 'removed'
-            pass # remove from database
+            pass  # remove from database
         page_type = 'success'
         title = f'The following record has been {word}!'
 
