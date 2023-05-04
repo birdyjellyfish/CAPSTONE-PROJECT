@@ -213,7 +213,8 @@ class Classes(Collection):
     Methods:
     --------
     add(record)
-    get_all(class_name)
+    get(class_name)
+    get_info(class_name)
     update(class_name, record)
     """
     def __init__(self):
@@ -233,6 +234,26 @@ class Classes(Collection):
                 """
         self._execute(query, record)
         return
+
+    def get_info(self, class_name):
+        """Returns the class info"""
+        # retrieve Class record
+        query = """
+                SELECT *
+                FROM 'Classes'
+                WHERE class_name = ?;
+                """
+        values = (class_name,)
+        row = self._return(query, values, multi=False)
+        if row is None:
+            return False
+        
+        # convert data to dictionary
+        field_names = row.keys()
+        data = {}
+        for i, elem in enumerate(field_names):
+            data[elem] = row[i]
+        return data
 
     def get(self, class_name):
         """Returns all students in the corresponding class."""

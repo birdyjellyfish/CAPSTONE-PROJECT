@@ -1,7 +1,5 @@
 from storage import Students, Classes, Subjects, CCAs, Activities
 
-ccas = CCAs()
+from storage import Students, Classes, Subjects, CCAs, Activities
 students = Students()
-classes = Classes()
-activities = Activities()
-print(students.get('chia cheng'))
+
