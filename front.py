@@ -42,11 +42,10 @@ def add():
 
     if 'confirm' in request.args:
         keys = list(request.form.keys())
-        print(keys)
         page_type = 'form'
         title = 'Please confirm the following details'
         tdtype = 'hidden'
-        button = 'Confirm'
+        button = 'Yes'
         form_data = {}
         for i in keys:
             form_data[f'{i}'] = request.form[f'{i}']
@@ -129,47 +128,94 @@ def view():
 def edit():
     page_type = 'new'
     title = 'What would you like to edit?'
-    choices = ['CCA Membership', 'Activity Participation']
+    choices = ['Add CCA Member', 'Add Activity Participant', 'Edit CCA Member', 'Edit Activity Participant', 'Remove CCA Member', 'Remove Activity Participant']
     form_meta = {'action': '/edit?edit', 'method': 'get'}
+    form_data = {'Student Name': ''}
     choice = ''
-    data = {}
+    data = None
     key = ''
     name = ''
     new = ''
     error = ''
+    type = ''
+    action = 'remove'
+    tdtype='text'
 
     if request.args.get('choice') in choices:
         choice = request.args.get('choice')
         page_type = 'search'
-        title = f'Please enter the name of the student you would like to change the {choice} of:'
+        type = 'CCA' if choice in ['Add CCA Member', 'Edit CCA Member', 'Remove CCA Member'] else 'Activity'
+        if choice in ['Add CCA Member', 'Add Activity Participant']:
+            action = 'add'
+            form_data['Role'] = ''
+            if type == 'Activity':
+                form_data['Award'] = ''
+                form_data['Hours'] = ''
+        elif choice in ['Edit CCA Member', 'Edit Activity Participant']:
+            action  = 'edit'
+        # action will remain as removed if its remove cca member/remove activity participant
+        form_data[type] = ''
+        title = f'Please enter the Student Name and {type}'
         form_meta = {'action': '/edit?searched', 'method': 'post'}
-
+        
     if 'searched' in request.args:
         # if not found render error page - html file but not created yet
         #still need?? ~ Moses
-        key = list(request.form.keys())
-        choice = request.form['choice']
-        data = ''
-        # need if statement for either activity or cca and do the .search .find wtv
-        if data is None:
+        # three diff titles for edit/remove/add
+        action = request.form['action']
+        # keys = list(request.form.keys())
+        # for item in keys:
+        #     if item != 'Student Name':
+        #         type = item
+        page_type = 'verify'
+        form_data = dict(request.form)
+        form_data.pop('action')
+        for item in list(form_data.keys()):
+            if item != 'Student Name':
+                type = item
+        if action != 'add':
+            form_data['Role'] ='?'
+            if type == 'Activity':
+                form_data['Award'] = '?'
+                form_data['Hours'] = '?' # those question mark stuff get from database
+  
+        # check if student exists or not
+        if False: # if student does not exist
             page_type = 'search'
             error = 'Student does not exist'
-            title = f'Please enter the name of the student you would like to change the {choice} of:'
+            title = f'Please enter the Student Name and {type}'
             form_meta = {'action': '/edit?searched', 'method': 'post'}
         else:
-            title = 'Please edit the record below'
             form_meta = {'action': '/edit?success', 'method': 'post'}
-            page_type = 'verify'
+            
+        if action == 'add':
+            title = 'Please confirm that you would like to add the following'
+            tdtype = 'hidden'
+        elif action == 'edit':
+            title = 'Please edit the following details'
+        else:
+            title = 'Please confirm that you would like to delete the following record'
+            tdtype = 'hidden'
+        
 
     if 'success' in request.args:
-        # do the editing
-        # name is just the student name
-        # new is either the new cca or new activity
-        name = request.form['name']
-        new = request.form['edit']
+        action = request.form['action']
+        form_data = dict(request.form)
+        form_data.pop('action')
+        # edit the data from the database
+        if action == 'add':
+            word = 'added'
+            pass
+            # add form_data into database
+        elif action == 'edit':
+            word = 'edited'
+            pass
+            # edit new data
+        elif action == 'remove':
+            word = 'removed'
+            pass # remove from database
         page_type = 'success'
-        title = 'The following record has been updated!'
-        choice = request.form['choice']
+        title = f'The following record has been {word}!'
 
     return render_template('edit.html',
                            page_type=page_type,
@@ -181,4 +227,8 @@ def edit():
                            key=key,
                            name=name,
                            new=new,
-                           error=error)
+                           error=error,
+                           form_data=form_data,
+                           type=type,
+                          action=action,
+                          tdtype=tdtype)
