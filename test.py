@@ -1,9 +1,8 @@
-from storage import Students, Classes, Subjects, CCAs
+from storage import Students, Classes, Subjects, CCAs, Activities
 
 ccas = CCAs()
 students = Students()
-record = {'cca_name': 'Volleyball', 'type': 'Sports'}
-ccas.add(record)
-member = {'student_name': 'Juan', 'cca_name': 'Volleyball', 'role': 'Captain'}
-print(ccas.add_member(member))
-print(ccas.get_member('Kaelin'))
+classes = Classes()
+activities = Activities()
+print(ccas.get_student('Kieran'))
+print(classes.get('22S27'))
