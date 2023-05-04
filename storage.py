@@ -212,7 +212,7 @@ class Classes(Collection):
     Methods:
     --------
     add(record)
-    get(class_name)
+    get_all(class_name)
     update(class_name, record)
     """
     def __init__(self):
@@ -402,6 +402,7 @@ class CCAs(Collection):
     add_student(record)
     get(cca_name)
     get_student(student_name)
+    get_all(cca_name)
     update(cca_name, record)
     update_student(record)
     delete(cca_name)
