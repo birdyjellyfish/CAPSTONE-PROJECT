@@ -97,13 +97,15 @@ def add():
     if 'result' in request.args:
         ## check if record is present       
         form_data = dict(request.form)
-        if ccas.add({'cca_name':form_data['CCA Name'], 'type':form_data['CCA Type']}): #will return False if cca already exists
+        if ccas.add({'cca_name':form_data['CCA Name'], 'type':form_data['CCA Type']}) != False: #will return False if cca already exists
             page_type = 'success'
             title = 'You have successfully added the following record!'
         else:
             page_type = 'form'
             form_meta = {'action': '/add?confirm', 'method': 'post'}
             error = f'ERROR! The CCA {form_data["CCA Name"]} already exists'
+            button = 'Confirm'
+            tdtype = 'hidden'
 
     # else:
     # page_type = ''
