@@ -26,7 +26,7 @@
     <table>
     <form action='{{form_meta["action"]}}' method='{{form_meta["method"]}}'>
         <tr>
-            <td><span class='highlight-pink'><label for='{{choice}}'>{{choice}}:</label></span></td>
+            <td><span class='highlight-pink'><label for='{{choice}}'>{{choice}}</label></span></td>
             <td><input id={{choice}} type='text' name={{choice}} value=''></td>
         </tr>
    
@@ -43,7 +43,7 @@
     <table>
     {% for key,value in data.items() %}
     <tr>
-        <td><span class='highlight-pink'>{{key.replace('_',' ').title()}}:</span></td>
+        <td><span class='highlight-pink'>{{table_header[key]}}</span></td>
         <td><span class='highlight-pink'>{{value}}</span></td>
     </tr>
     {% endfor %}
