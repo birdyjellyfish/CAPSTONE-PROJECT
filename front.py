@@ -11,20 +11,40 @@ students = Students()
 app = Flask(__name__)
 
 
-def validate_date(date: str):
-    """Validate a given date based on ISO 8601 YYYY-MM-DD format"""
+def validate_date(start_date: str, end_date=''):
+    """
+    Validate a given dates based on ISO 8601 YYYY-MM-DD format
+    Start date must be before end_date
+    """
     date = date.strip()
 
     format = "%Y-%m-%d"
     try:
-        res = bool(datetime.strptime(date, format))
+        res1 = datetime.strptime(start_date, format)
     except ValueError:
-        res = False
+        res1 = False
 
-    if res:
-        year, month, day = date.split('-')
+    if end_date != '':
+        try:
+            res2 = datetime.strptime(end_date, format)
+        except ValueError:
+            res2 = False
+    else:
+        res2 = True
+
+    if res1 and res2:
+        #check if start_date is later than end_date
+        if end_date == '' and (res1 > res2):
+            return False
+        
+        year, month, day = start_date.split('-')
         if len(year) == 4 and len(month) == 2 and len(day) == 2:
             return True
+
+        if end_date != '':
+            year, month, day = end_date.split('-')
+            if len(year) == 4 and len(month) == 2 and len(day) == 2:
+                return True
     return False
 
 
@@ -33,12 +53,16 @@ def has_error(data: dict):
     Checks if items in a dict are empty and removes whitespace
     Returns an error message for the last value that is empty, otherwise returns False
     '''
-    for key, value in data.items():
-        data[key] = value.strip()  #remove accidental whitespace
+    for key, value in data.items():  
         if not value:
             return f'Please do not leave the {key} empty'
-    return False
+    return ''
 
+def strip(data: dict):
+    """Strips all the values in a dict"""
+    for key, value in data.items():
+        data[key] = value.strip()
+    return data
 
 @app.route('/')
 def index():
@@ -66,13 +90,13 @@ def add():
         if choice == 'CCA':
             #check if the person chose cca or actiity then render the appropriate stuff
             #later get the data back from the form again and use functions to add it to the tables
-            form_data = {'CCA Name': '', 'CCA Type': ''}
+            form_data = {'Name': '', 'CCA Type': ''}
             title = 'Add CCA:'
             page_type = 'form'
             form_meta = {'action': '/add?confirm', 'method': 'post'}
         else:
             form_data = {
-                'Activity Name': '',
+                'Name': '',
                 'Start Date': '',
                 'Description': '',
                 'End Date': ''
@@ -82,15 +106,17 @@ def add():
             form_meta = {'action': '/add?confirm', 'method': 'post'}
 
     if 'confirm' in request.args:
-        page_type = 'form'
+        page_type = 'confirm'
         title = 'Please confirm the following details'
         tdtype = 'text'
         button = 'Submit'
-        form_data = dict(request.form)
+        form_data = strip(dict(request.form))
         error = has_error(form_data)
         if 'Activity Name' in form_data.keys():  # validate date if activity
-            if not form_data['End Date']:
-                error = 'Please ensure the date is in the correct format'
+            start_date = form_data['Start Date']
+            end_date = form_data['End Date']
+            if not validate_date(start_date, end_date):
+                error += 'Please ensure the date is in the correct format'
 
         if error:  # if there is an error, return to new form page
             form_meta = {'action': '/add?confirm', 'method': 'post'}
@@ -101,15 +127,22 @@ def add():
 
     if 'result' in request.args:
         ## check if record is present
-        form_data = dict(request.form)
-        if ccas.add({
-                'cca_name': form_data['CCA Name'],
-                'type': form_data['CCA Type']
-        }) != False:  #will return False if cca already exists
+        form_data = strip(dict(request.form))
+        choice = 'CCA' if 'CCA Type' in form_data.keys() else 'Activity'
+        if choice == 'CCA':
+            res = ccas.add({'cca_name': form_data['Name'],
+                            'type': form_data['CCA Type']})
+        else:
+            res = activities.add({'activity_name': form_data['Name'],
+                           'start_date': form_data['Start Date'],
+                           'description': form_data['Description'],
+                           'end_date': form_data['End Date']})
+                            
+        if res != False:
             page_type = 'success'
             title = 'You have successfully added the following record!'
         else:
-            title = f'ERROR! The CCA {form_data["CCA Name"]} already exists'
+            title = f'ERROR! The {choice} {form_data["Name"]} already exists'
     # else:
     # page_type = ''
     # name = request.form['Student Name']
@@ -253,11 +286,16 @@ def edit():
             form_meta = {'action': '/edit?searched', 'method': 'post'}
         else:
             if action != 'add':
-                form_data['Role'] = '?'
+                name = request.form['Student Name']
+                
+                if type == 'Activity':
+                    record = activities.get_student(name, request.form[type])[0]
+                else:
+                    record = ccas.get_student(name, request.form[type])[0]
+                form_data['Role'] = record['role']
                 if type == 'Activity':
                     form_data['Award'] = '?'
-                    form_data[
-                        'Hours'] = '?'  # those question mark stuff get from database
+                    form_data['Hours'] = '?'  # those question mark stuff get from database
             form_meta = {'action': '/edit?success', 'method': 'post'}
 
         if action == 'add':

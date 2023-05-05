@@ -43,9 +43,9 @@
     {% endif %}
     <br>
     <input type='submit' value='{{button}}'>
-    <!-- {% if page_type == 'confirm' %}
-    <input type="submit" value="No" onclick="history.back()">
-    {% endif %} -->
+    {% if page_type == 'confirm' %}
+    <input type="button" value="No" onclick="history.back()">
+    {% endif %}
     </form>
     {% endif %}
     
