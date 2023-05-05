@@ -699,12 +699,17 @@ class Activities(Collection):
             data[elem] = row[i]
         return data
         
-    def get_student(self, student_name):
-        """Return a list of student's activity records."""
+    def get_student(self, student_name, activity_name=None):
+        """
+        Return a list of student's activity records.
+        Return False if no records found
+        Return a specific record if activity_name is specified
+        """
         data = []
             
         # retrieve activity_id, role, award, hours, activity_name
-        query = """
+        if activity_name is not None:
+            query = """
                 SELECT
                     'Activities'.'activity_name',
                     'Students-Activities'.'role',
@@ -715,9 +720,24 @@ class Activities(Collection):
                 ON 'Students'.'student_id' = 'Students-Activities'.'student_id'
                 INNER JOIN 'Activities'
                 ON 'Activities'.'activity_id' = 'Students-Activities'.'activity_id'
-                WHERE student_name LIKE ?;
+                WHERE 'Students'.'student_name' LIKE ? AND 'Activities'.'activity_name' LIKE ?;
                 """
-        values = ('%'+student_name+'%',)
+            values = ('%'+student_name+'%', '%'+activity_name+'%',)
+        else:
+            query = """
+                    SELECT
+                        'Activities'.'activity_name',
+                        'Students-Activities'.'role',
+                        'Students-Activities'.'award',
+                        'Students-Activities'.'hours'
+                    FROM 'Students'
+                    INNER JOIN 'Students-Activities'
+                    ON 'Students'.'student_id' = 'Students-Activities'.'student_id'
+                    INNER JOIN 'Activities'
+                    ON 'Activities'.'activity_id' = 'Students-Activities'.'activity_id'
+                    WHERE student_name LIKE ?;
+                    """
+            values = ('%'+student_name+'%',)
         row = self._return(query, values, multi=True)
 
         # check if student has an activity
