@@ -70,25 +70,33 @@ class Collection:
         df = pd.DataFrame(tables, columns = headers)
         print(df)
 
-    def _retrieve_id(self, tblname, name, name_key, id_key):
+    def _retrieve_id(self, tblname, name, name_key, id_key, like=False):
         """Retrieves id linked to name; return False if name
         does not exist in tblname
 
         E.g. _retrieve_id(tblname='Students', name='Moses', name_key='student_name', 
         id_key='student_id')
         """
-        # check if name exists
-        if not self._is_exist(tblname, name_key, name):
-            return False
 
         # retrieve student_id
-        query = f"""
+        if like:
+            query = f"""
                 SELECT {id_key}
                 FROM {tblname}
-                WHERE {name_key} = ?;
+                WHERE {name_key} LIKE ?;
                 """
-        values = (name,)
+            values = ('%'+name+'%',)
+        else:
+            query = f"""
+                    SELECT {id_key}
+                    FROM {tblname}
+                    WHERE {name_key} = ?;
+                    """
+            values = (name,)
         row = self._return(query, values, multi=False)
+        #check if name exists
+        if row is None:
+            return False
         name_id = row[id_key]
         return name_id
 
@@ -181,7 +189,7 @@ class Students(Collection):
                     'year_enrolled' = ?,
                     'grad_year' = ?,
                     'class_id' = ?
-                WHERE student_name LIKE ?;
+                WHERE student_name = ?;
                 """
         values = (record["new_student_name"], record["new_age"], record["new_year_enrolled"], record["new_grad_year"], class_id, student_name,)
         self._execute(query, values)
@@ -241,9 +249,9 @@ class Classes(Collection):
         query = """
                 SELECT *
                 FROM 'Classes'
-                WHERE class_name = ?;
+                WHERE class_name LIKE ?;
                 """
-        values = (class_name,)
+        values = ('%'+class_name+'%',)
         row = self._return(query, values, multi=False)
         if row is None:
             return False
@@ -265,10 +273,10 @@ class Classes(Collection):
                 FROM 'Students'
                 INNER JOIN 'Classes'
                 ON 'Students'.'class_id' = 'Classes'.'class_id'
-                WHERE 'Classes'.'class_name' = ?
+                WHERE 'Classes'.'class_name' LIKE ?
                 ORDER BY 'student_id' ASC;
                 """
-        values = (class_name,)
+        values = ('%'+class_name+'%',)
         row = self._return(query, values, multi=True)
         if row == []:
             return False
@@ -339,7 +347,7 @@ class Subjects(Collection):
             return False
 
         # retrieve student_id
-        student_id = self._retrieve_id('Students', record['student_name'], 'student_name', 'student_id')
+        student_id = self._retrieve_id('Students', record['student_name'], 'student_name', 'student_id', like=True)
         if not student_id:
             return False
             
@@ -358,25 +366,20 @@ class Subjects(Collection):
 
     def get_student(self, student_name):
         """Returns a list of subj that student takes"""
-        #Retrieve student_id
-        student_id = self._retrieve_id('Students', student_name, 'student_name', 'student_id')
-        if not student_id:
-            return False
-
-        #check if student is in Students-Subjects (check if he takes a subj at all)
-        if not self._is_exist('Students-Subjects', "student_id", student_id):
-            return False
-        
         #retrieve the subj_id for subj that student takes
         query = """
                 SELECT * 
                 FROM 'Students-Subjects'
                 INNER JOIN 'Subjects'
                 ON 'Students-Subjects'.'subj_id' = 'Subjects'.'subj_id'
-                WHERE student_id = ?;
+                INNER JOIN 'Students'
+                ON 'Students'.'student_id' = 'Students-Subjects'.'student_id'
+                WHERE student_name LIKE ?;
                 """
-        values = (student_id,)
+        values = ('%'+student_name+'%',)
         subj_list = self._return(query, values, multi=True)
+        if subj_list == []:
+            return False
         data = []
         for subj in subj_list:
             data.append({'subj_name': subj['subj_name'], 'level': subj['level']})
@@ -451,8 +454,8 @@ class CCAs(Collection):
     def add_student(self, record):
         """Adds a student to a CCA."""
         # check if student/cca exists and retrive ids
-        record["student_id"] = self._retrieve_id("Students", record["student_name"], "student_name", "student_id")
-        record["cca_id"] = self._retrieve_id("CCAs", record["cca_name"], "cca_name", "cca_id")
+        record["student_id"] = self._retrieve_id("Students", record["student_name"], "student_name", "student_id", like=True)
+        record["cca_id"] = self._retrieve_id("CCAs", record["cca_name"], "cca_name", "cca_id", like=True)
         
         if record["student_id"] == False or record['cca_id'] == False:
             return False
@@ -472,18 +475,16 @@ class CCAs(Collection):
         
     def get(self, cca_name):
             """Returns a CCA's details."""
-             # check if CCA exists
-            if not self._is_exist("CCAs", "cca_name", cca_name):
-                return False
-                
             # retrieve CCA record
             query = """
                     SELECT *
                     FROM 'CCAs'
                     WHERE cca_name LIKE ?;
                     """
-            values = (cca_name,)
+            values = ('%'+cca_name+'%',)
             row = self._return(query, values, multi=False)
+            if row is None:
+                return False
             
             # convert data to dictionary
             field_names = row.keys()
@@ -492,14 +493,16 @@ class CCAs(Collection):
                 data[elem] = row[i]
             return data
         
-    def get_student(self, student_name):
-        """Returns a list of dict of student's CCAs
+    def get_student(self, student_name, cca_name=None):
+        """Returns a list of dict of student's CCAs (if student_cca is None)
         Returns False if student does not have any ccas.
+        Returns specific cca for student if student_cca is specified
         """
         data = []
-        
+
         # retrieve cca_id and role
-        query = """
+        if cca_name is not None:
+            query = """
                 SELECT 
                     'CCAs'.'cca_name' AS 'cca_name',
                     'Students-CCAs'.'role' AS 'role'
@@ -508,10 +511,24 @@ class CCAs(Collection):
                 ON 'Students'.'student_id' = 'Students-CCAS'.'student_id'
                 INNER JOIN CCAs
                 ON 'CCAs'.'cca_id' = 'Students-CCAs'.'cca_id'
-                WHERE student_name LIKE ?;
+                WHERE 'Students'.'student_name' LIKE ? AND 'CCAs'.'cca_name' LIKE ?;
                 """
-        # values = tuple(student_id)
-        row = self._return(query, (student_name,), multi=True)
+            values = ('%'+student_name+'%', '%'+cca_name+'%',)
+        else:
+            query = """
+                    SELECT 
+                        'CCAs'.'cca_name' AS 'cca_name',
+                        'Students-CCAs'.'role' AS 'role'
+                    FROM 'Students'
+                    INNER JOIN 'Students-CCAs'
+                    ON 'Students'.'student_id' = 'Students-CCAS'.'student_id'
+                    INNER JOIN CCAs
+                    ON 'CCAs'.'cca_id' = 'Students-CCAs'.'cca_id'
+                    WHERE student_name LIKE ?;
+                    """
+
+            values = ('%'+student_name+'%',)
+        row = self._return(query, values, multi=True)
 
         #check if student have any ccas at all
         if row == []:
@@ -536,7 +553,7 @@ class CCAs(Collection):
                 UPDATE '{self._tblname}' SET
                     'cca_name' = ?,
                     'type' = ?
-                WHERE cca_name LIKE ?;
+                WHERE cca_name = ?;
                 """
         values = (record["new_cca_name"], record["new_type"], cca_name)
         self._execute(query, values)
@@ -643,8 +660,8 @@ class Activities(Collection):
     def add_student(self, record):
         """Adds a student to an activity."""
         # check if student/activity exists and retrive ids
-        record["student_id"] = self._retrieve_id("Students", record["student_name"], "student_name", "student_id")
-        record["activity_id"] = self._retrieve_id("Activities", record["activity_name"], "activity_name", "activity_id")
+        record["student_id"] = self._retrieve_id("Students", record["student_name"], "student_name", "student_id", like=True)
+        record["activity_id"] = self._retrieve_id("Activities", record["activity_name"], "activity_name", "activity_id", like=True)
         
         if record["student_id"] == False or record['activity_id'] == False:
             return False
@@ -664,18 +681,16 @@ class Activities(Collection):
 
     def get(self, activity_name):
         """Returns an activity's details."""
-        # check if activity exists
-        if not self._is_exist("Activities", "activity_name", activity_name):
-            return False
-
         # retrieve activity record
         query = f"""
                 SELECT *
                 FROM '{self._tblname}'
-                WHERE activity_name LIKE ?
+                WHERE activity_name LIKE ?;
                 """
-        values = tuple(activity_name)
-        row = self._execute(query, values, multi=False)
+        values = ('%'+activity_name+'%',)
+        row = self._return(query, values, multi=False)
+        if row is None:
+            return False
 
         # convert data into dictionary
         field_names = row.keys()
@@ -702,7 +717,7 @@ class Activities(Collection):
                 ON 'Activities'.'activity_id' = 'Students-Activities'.'activity_id'
                 WHERE student_name LIKE ?;
                 """
-        values = (student_name,)
+        values = ('%'+student_name+'%',)
         row = self._return(query, values, multi=True)
 
         # check if student has an activity
@@ -733,7 +748,7 @@ class Activities(Collection):
                     'start_date' = ?,
                     'end_date' = ?,
                     'description' = ?
-                WHERE activity_name LIKE ?;
+                WHERE activity_name = ?;
                 """
         values = (record["new_activity_name"], record["new_start_date"], record["new_end_date"], record["new_description"], activity_name)
         self._execute(query, values)
