@@ -6,6 +6,7 @@
 <body>
     {% include 'header.html' %}
     <div class='container'>
+    <span class='highlight-purple'>{{title}}</span>
     {% for qn, ans in faq.items() %}
     
         <p><b class='highlight-pink'>{{qn}}</b></p>
