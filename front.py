@@ -114,7 +114,7 @@ def add():
 
     if 'confirm' in request.args:
         page_type = 'confirm'
-        title = 'Please confirm the following details'
+        title = 'Are the following details correct?'
         tdtype = 'text'
         button = 'Submit'
         form_data = strip(dict(request.form))
@@ -256,7 +256,7 @@ def view():
             page_type = 'search'
             error = f'{key} does not exist'
             choice = key
-            title = f'Please enter the {key} you would like to search for:'
+            title = f'Which {key} you would like to search for?'
             form_meta = {'action': '/view?searched', 'method': 'post'}
 
     return render_template(file,
@@ -309,7 +309,7 @@ def edit():
             action = 'edit'
         # action will remain as removed if its remove cca member/remove activity participant
         form_data[type] = ''
-        title = f'Which student do you want to {action} from the {type}' if action != 'add' else f'Which student do you want to {action} to the {type}'
+        title = f'Which student do you want to {action} from the {type}?' if action != 'add' else f'Which student do you want to {action} to the {type}?'
         form_meta = {'action': '/edit?searched', 'method': 'post'}
 
     if 'searched' in request.args:
@@ -348,7 +348,7 @@ def edit():
             form_meta = {'action': '/edit?searched', 'method': 'post'}
             tdtype = 'text'
             page_type = 'search'
-            title = f'Please enter the Student Name and {type}'
+            title = f'Which student do you want to {action} from the {type}?' if action != 'add' else f'Which student do you want to {action} to the {type}?'
         else:
             if action != 'add':
                 name = request.form['Student Name']
@@ -366,7 +366,7 @@ def edit():
             form_meta = {'action': '/edit?success', 'method': 'post'}
 
             if action == 'add':
-                title = 'Please confirm that you would like to add the following'
+                title = 'Are you sure you want to add the following record?'
                 tdtype = 'hidden'
                 #get the correct values for the confirm page
                 if type == 'Activity':
@@ -377,7 +377,7 @@ def edit():
             elif action == 'edit':
                 title = 'Please edit the following details'
             else:
-                title = 'Please confirm that you would like to delete the following record'
+                title = 'Are you sure you want to delete the this record?'
                 tdtype = 'hidden'
 
     if 'success' in request.args:
@@ -434,6 +434,14 @@ def edit():
                            form_data=form_data,
                            action=action,
                            tdtype=tdtype)
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    return render_template('500.html'), 500
 
 @app.route('/help', methods=['GET'])
 def help():
