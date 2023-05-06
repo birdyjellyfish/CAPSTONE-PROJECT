@@ -16,14 +16,18 @@ def validate_date(start_date: str, end_date=''):
     Validate a given dates based on ISO 8601 YYYY-MM-DD format
     Start date must be before end_date
     """
-    date = date.strip()
-
+    #strip the dates
+    start_date = start_date.strip()
+    end_date = end_date.strip()
+    
+    #check for start date
     format = "%Y-%m-%d"
     try:
         res1 = datetime.strptime(start_date, format)
     except ValueError:
         res1 = False
-
+    
+    #check for end date if it is not empty
     if end_date != '':
         try:
             res2 = datetime.strptime(end_date, format)
@@ -34,17 +38,20 @@ def validate_date(start_date: str, end_date=''):
 
     if res1 and res2:
         #check if start_date is later than end_date
-        if end_date == '' and (res1 > res2):
+        if end_date != '' and (res1 > res2):
             return False
         
+        #check for end date if it is not empty
+        if end_date != '':
+            year, month, day = end_date.split('-')
+            if len(year) != 4 or len(month) != 2 or len(day) != 2:
+                return False
+        
+        #check length for start date
         year, month, day = start_date.split('-')
         if len(year) == 4 and len(month) == 2 and len(day) == 2:
             return True
-
-        if end_date != '':
-            year, month, day = end_date.split('-')
-            if len(year) == 4 and len(month) == 2 and len(day) == 2:
-                return True
+        
     return False
 
 
@@ -212,7 +219,7 @@ def view():
             data = activities.get(form_data[key])
 
         if data:  # if in database
-            title = f'{key}: {form_data[key]}'
+            title = f'Search: {form_data[key]}'
             page_type = 'result'
             # get from database
         else:  # if not in database, user will re-enter the form
@@ -337,3 +344,11 @@ def edit():
                            form_data=form_data,
                            action=action,
                            tdtype=tdtype)
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    return render_template('500.html'), 500
