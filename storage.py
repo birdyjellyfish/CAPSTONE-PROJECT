@@ -148,7 +148,8 @@ class Students(Collection):
                     'Students'.'age',
                     'Students'.'year_enrolled',
                     'Students'.'grad_year',
-                    'Classes'.'class_name'
+                    'Classes'.'class_name',
+                    'Students'.'student_id'
                 FROM '{self._tblname}'
                 INNER JOIN 'Classes'
                 ON 'Students'.'class_id' = 'Classes'.'class_id'
@@ -167,6 +168,7 @@ class Students(Collection):
         data["year_enrolled"] = row["year_enrolled"]
         data["grad_year"] = row["grad_year"]
         data['class_name'] = row["class_name"]
+        data['student_id'] = row['student_id']
 
         return data
 
@@ -285,7 +287,8 @@ class Classes(Collection):
         data = []
         for item in row:
             record = {}
-            record[item["student_id"]] = item["student_name"]
+            record['student_id'] = item['student_id']
+            record['student_name'] = item["student_name"]
             data.append(record)
         return data
 
@@ -339,7 +342,11 @@ class Subjects(Collection):
         return subj_id_list
 
     def add_student(self, record):
-        """Adds a student's subjects."""
+        """Adds a student's subjects.
+        record = {'student_name': ...,
+                  'subj_list': [{'subj_name': ..., 'level': ...}, ...]}
+        Returns False if student does not exist or subj does not exist
+        """
         # check if each subject exists and retrieve subject_id
         subj_list = record["subj_list"]
         subj_id_list = self._subj_is_exist(subj_list)
@@ -452,7 +459,9 @@ class CCAs(Collection):
         return
 
     def add_student(self, record):
-        """Adds a student to a CCA."""
+        """Adds a student to a CCA.
+        record = {'student_name': ..., 'cca_name': ..., 'role': ...}
+        """
         # check if student/cca exists and retrive ids
         record["student_id"] = self._retrieve_id("Students", record["student_name"], "student_name", "student_id", like=True)
         record["cca_id"] = self._retrieve_id("CCAs", record["cca_name"], "cca_name", "cca_id", like=True)
@@ -505,7 +514,8 @@ class CCAs(Collection):
             query = """
                 SELECT 
                     'CCAs'.'cca_name' AS 'cca_name',
-                    'Students-CCAs'.'role' AS 'role'
+                    'Students-CCAs'.'role' AS 'role',
+                    'Students'.'student_name' AS 'student_name'
                 FROM 'Students'
                 INNER JOIN 'Students-CCAs'
                 ON 'Students'.'student_id' = 'Students-CCAS'.'student_id'
@@ -538,6 +548,8 @@ class CCAs(Collection):
             record = {}
             record['cca_name'] = cca['cca_name']
             record['role'] = cca['role']
+            if cca_name is not None:
+                record['student_name'] = cca['student_name']
             data.append(record)
 
         return data
@@ -560,9 +572,11 @@ class CCAs(Collection):
         return
 
     def update_student(self, record):
-        """Updates a student's CCA record (update role only)."""
+        """Updates a student's CCA record (update role only).
+        record = {'student_name': ..., 'cca_name': ..., 'role': ...}
+        """
         # retrieve student_id
-        student_id = self._retrieve_id("Students", record["student_name"], "student_name", "student_id")
+        student_id = self._retrieve_id("Students", record["student_name"], "student_name", "student_id", like=True)
         
         # check if student in Students-CCAs
         if not self._is_exist("Students-CCAs", "student_id", student_id):
@@ -577,7 +591,7 @@ class CCAs(Collection):
                     'role' = ?
                 WHERE student_id = ? AND cca_id = ?;
                 """
-        values = (record["new_role"], student_id, cca_id)
+        values = (record["role"], student_id, cca_id)
         self._execute(query, values)
         return
 
@@ -658,7 +672,10 @@ class Activities(Collection):
         return
 
     def add_student(self, record):
-        """Adds a student to an activity."""
+        """Adds a student to an activity.
+        record = {'student_name': ..., 'activity_name': ..., 'role': ..., 'award: ...',
+        'hours': ...}
+        """
         # check if student/activity exists and retrive ids
         record["student_id"] = self._retrieve_id("Students", record["student_name"], "student_name", "student_id", like=True)
         record["activity_id"] = self._retrieve_id("Activities", record["activity_name"], "activity_name", "activity_id", like=True)
@@ -714,7 +731,8 @@ class Activities(Collection):
                     'Activities'.'activity_name',
                     'Students-Activities'.'role',
                     'Students-Activities'.'award',
-                    'Students-Activities'.'hours'
+                    'Students-Activities'.'hours',
+                    'Students'.'student_name'
                 FROM 'Students'
                 INNER JOIN 'Students-Activities'
                 ON 'Students'.'student_id' = 'Students-Activities'.'student_id'
@@ -746,7 +764,8 @@ class Activities(Collection):
 
         for activity in row:
             record = {}
-            record["student_name"] = student_name
+            if activity_name is not None:
+                record["student_name"] = activity['student_name']
             record["role"] = activity["role"]
             record["award"] = activity["award"]
             record["hours"] = activity["hours"]
@@ -775,7 +794,10 @@ class Activities(Collection):
         return
 
     def update_student(self, record):
-        """Updates a student's activity record (updates role, award, hours)."""
+        """Updates a student's activity record (updates role, award, hours).
+        record = {'student_name': ..., 'activity_name', 'award': ..., 'role': ..., 
+        'hours': ...}
+        """
         # retrieve student_id
         student_id = self._retrieve_id("Students", record["student_name"], "student_name", "student_id")
         
@@ -795,7 +817,7 @@ class Activities(Collection):
                 WHERE student_id = ?
                 AND activity_id = ?;
                 """
-        values = (record["new_role"], record["new_award"], record["new_hours"], student_id, activity_id)
+        values = (record["role"], record["award"], record["hours"], student_id, activity_id)
         self._execute(query, values)
         return
 
