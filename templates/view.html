@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Student CCA Portal View page</title>
+    <title>NY Hub View page</title>
     {% include "head.html" %}
 </head>
 <body>
@@ -39,15 +39,42 @@
     {% endif %}        
 
     {% if page_type == 'result' %}
-        <br>
-    <table>
-    {% for key,value in data.items() %}
-    <tr>
-        <td><span class='highlight-pink'>{{table_header[key]}}</span></td>
-        <td><span class='highlight-pink'>{{value}}</span></td>
-    </tr>
-    {% endfor %}
-    </table>
+            <br>
+        <table>
+        {% for key,value in data.items() %}
+        <tr>
+            <td><span class='highlight-pink'>{{table_header[key]}}</span></td>
+            <td><span class='highlight-blue'>{{value}}</span></td>
+        </tr>
+        {% endfor %}
+        </table>    
+    
+        {% if list_of_dicts %}
+            {% for type, info, list_header in list_of_dicts %}
+            <br>
+            {% if info != False %}
+            <span class='highlight-purple'>{{type}}</span>
+            <table>
+                <tr>
+                    {% for header in list_header %}
+                    <td><span class='highlight-pink'>{{header}}</span></td>
+                    {% endfor %}
+                </tr>
+                {% for item in info %}
+                <!-- info = [{'subj_name':'gp', 'subj_lvl': 'h1'}, {}] -->
+                <tr>
+                    {% for v in item.values() %}
+                        <td><span class='highlight-blue'>{{v}}</span></td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <span class='highlight-purple'>This student does not have any {{type}}.</span><br>
+            {% endif %}
+            {% endfor %}
+        {% endif %}
+    
     {% endif %}
     </div>
 </body>   

@@ -27,10 +27,7 @@ body{
     color: #c19ad0
 }
 
-.orange {
-    font-weight: bold;
-    color: #d05a1b
-} 
+
 .instruction {
     font-size: 14px;
     font-style: italic;
@@ -103,15 +100,6 @@ table td {
   padding: 14px 16px;
   text-decoration: none;
 } 
-
-/* .dropdown a {
-  float: left;
-  font-size: 16px;
-  color: white;
-  text-align: center;
-  padding: 14px 16px;
-  text-decoration: none;
-}  */
 
 /* The dropdown container */
 .dropdown {
@@ -196,6 +184,7 @@ input[type=button], input[type=submit], input[type=reset] {
   margin: 4px 2px;
   cursor: pointer;
   border-radius: 8px;
+
 }
 
 hr.solid {
@@ -262,3 +251,4 @@ hr.solid {
 /* .select-items div:hover, .same-as-selected {
   background-color: rgba(0, 0, 0, 0.1);
 } */
+
