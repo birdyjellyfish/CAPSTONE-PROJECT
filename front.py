@@ -446,11 +446,16 @@ def internal_server_error(error):
 @app.route('/help', methods=['GET'])
 def help():
     faq = {
-        'this is a question':
-        'this is an answer',
-        'this is another question':
-        'this is another answer'
+        'How do I use this website?':
+        """The Student CCA Portal allows you to add a CCA/Activity, view Student/Class/CCA/Activity and edit a CCA Member/Activity Participant
+        Viewing a Student would give you not only the student particulars, but also the Subjects they take and the CCAs and Activities they are in! 
+        Viewing a Class would give you the details of the Class, and also the students in the Class.""",
+        'Do I need to fill in the ENTIRE NAME when I want to search/edit a record?':
+        """
+        Nope, you don't have to do that at all. You only have to enter part of the name and the record would be shown! (saves your time and your brain capacity right 😎). Make sure not to name your records similarly to existing ones in the database! (otherwise it'll be lost in the database)
+        """
     }
     return render_template('help.html',
+                           title='Help Section',
                           faq=faq,
                           length=len(faq.items()))
