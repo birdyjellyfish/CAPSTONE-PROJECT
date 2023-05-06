@@ -434,3 +434,15 @@ def edit():
                            form_data=form_data,
                            action=action,
                            tdtype=tdtype)
+
+@app.route('/help', methods=['GET'])
+def help():
+    faq = {
+        'this is a question':
+        'this is an answer',
+        'this is another question':
+        'this is another answer'
+    }
+    return render_template('help.html',
+                          faq=faq,
+                          length=len(faq.items()))
