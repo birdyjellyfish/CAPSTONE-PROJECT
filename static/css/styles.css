@@ -198,6 +198,10 @@ input[type=button], input[type=submit], input[type=reset] {
   border-radius: 8px;
 }
 
+hr.solid {
+    border-top: 3px solid #bbb;
+}
+
 
 /* The container must be positioned relative: */
 /* .custom-select {
