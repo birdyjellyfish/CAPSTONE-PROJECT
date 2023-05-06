@@ -16,14 +16,18 @@ def validate_date(start_date: str, end_date=''):
     Validate a given dates based on ISO 8601 YYYY-MM-DD format
     Start date must be before end_date
     """
-    date = date.strip()
-
+    #strip the dates
+    start_date = start_date.strip()
+    end_date = end_date.strip()
+    
+    #check for start date
     format = "%Y-%m-%d"
     try:
         res1 = datetime.strptime(start_date, format)
     except ValueError:
         res1 = False
-
+    
+    #check for end date if it is not empty
     if end_date != '':
         try:
             res2 = datetime.strptime(end_date, format)
@@ -34,29 +38,34 @@ def validate_date(start_date: str, end_date=''):
 
     if res1 and res2:
         #check if start_date is later than end_date
-        if end_date == '' and (res1 > res2):
+        if end_date != '' and (res1 > res2):
             return False
         
+        #check for end date if it is not empty
+        if end_date != '':
+            year, month, day = end_date.split('-')
+            if len(year) != 4 or len(month) != 2 or len(day) != 2:
+                return False
+        
+        #check length for start date
         year, month, day = start_date.split('-')
         if len(year) == 4 and len(month) == 2 and len(day) == 2:
             return True
-
-        if end_date != '':
-            year, month, day = end_date.split('-')
-            if len(year) == 4 and len(month) == 2 and len(day) == 2:
-                return True
+        
     return False
 
 
 def has_error(data: dict):
     '''
-    Checks if items in a dict are empty and removes whitespace
-    Returns an error message for the last value that is empty, otherwise returns False
+    Returns an error message for the last value that is empty, otherwise returns an empty string
+    Exception for end date, award and hours which are optional
     '''
-    for key, value in data.items():  
-        if not value:
-            return f'Please do not leave the {key} empty'
+    for key, value in data.items():
+        #end date, award and hours can be empty
+        if value == '' and key not in ['End Date', 'Award', 'Hours']:
+            return f'Please do not leave the {key} empty.'
     return ''
+
 
 def strip(data: dict):
     """Strips all the values in a dict"""
@@ -88,8 +97,6 @@ def add():
         tdtype = 'text'
         button = 'Submit'
         if choice == 'CCA':
-            #check if the person chose cca or actiity then render the appropriate stuff
-            #later get the data back from the form again and use functions to add it to the tables
             form_data = {'Name': '', 'CCA Type': ''}
             title = 'Add CCA:'
             page_type = 'form'
@@ -111,15 +118,19 @@ def add():
         tdtype = 'text'
         button = 'Submit'
         form_data = strip(dict(request.form))
-        error = has_error(form_data)
-        if 'Activity Name' in form_data.keys():  # validate date if activity
+        error = has_error(form_data) 
+        if 'Description' in form_data.keys():  # validate date if activity
             start_date = form_data['Start Date']
             end_date = form_data['End Date']
             if not validate_date(start_date, end_date):
-                error += 'Please ensure the date is in the correct format'
+                error = 'Please ensure the date is in the correct format (YYYY-MM-DD).'
+                if end_date != '':
+                    error += ' Start Date should also be before End Date.'
 
         if error:  # if there is an error, return to new form page
             form_meta = {'action': '/add?confirm', 'method': 'post'}
+            tdtype = 'text'
+            page_type = 'form'
         else:  # otherwise, move on
             form_meta = {'action': '/add?result', 'method': 'post'}
             tdtype = 'hidden'
@@ -142,11 +153,11 @@ def add():
             page_type = 'success'
             title = 'You have successfully added the following record!'
         else:
-            title = f'ERROR! The {choice} {form_data["Name"]} already exists'
-    # else:
-    # page_type = ''
-    # name = request.form['Student Name']
-    # title = f'ERROR! The student {name} already exists'
+            error = f'The {choice} {form_data["Name"]} already exists'
+            form_meta = {'action': '/add?confirm', 'method': 'post'}
+            tdtype = 'text'
+            page_type = 'form'
+            button = 'Submit'
 
     return render_template('add.html',
                            page_type=page_type,
@@ -167,11 +178,14 @@ def view():
     form_meta = {'action': '/view?view', 'method': 'get'}
     form_data = {'choice': ''}
     table_header = {}
+    list_header = ()
     data = {}
     choice = ''
     key = ''
     file = 'view.html'
     error = ''
+    list_of_dicts = [] # contain the additional tables 
+                       #list of lists; one element inside is [header, data:dict]
 
     if request.args.get('choice') in choices:
         choice = request.args.get('choice')
@@ -193,25 +207,48 @@ def view():
                            'class_name': 'Class',
                            'student_id': 'Student ID'}
             data = students.get(form_data[key])
+            name = form_data['Student'].strip()
+
+            #check if student has any ccas or activities at all
+            #then on webpage print 'There are no CCAs/Activities linked to this student'
+            list_of_dicts.append(['Subjects', 
+                                  subjects.get_student(name), 
+                                 ('Subject', 'Level')])
+            list_of_dicts.append(['CCAs', 
+                                  ccas.get_student(name),
+                                 ('CCA', 'Role')])
+            list_of_dicts.append(['Activities', 
+                                  activities.get_student(name),
+                                  ('Activity', 'Role', 'Award', 'Hours')])
+
+        # info = [{'subj_name':'gp', 'subj_lvl': 'h1'}, {}]
+            
         elif key == 'Class':
+            name = form_data['Class'].strip()
             table_header = {'class_name': 'Class',
                             'level': 'Level',
                            'class_id': 'Class ID'}
+            list_header = ('Student ID', 'Student Name')
             data = classes.get_info(form_data[key])
+            list_of_dicts.append(['Class List', classes.get(name), list_header])
+            
         elif key == 'CCA':
+            name = form_data[key].strip()
             table_header = {'cca_name': 'CCA Name',
                             'type': 'Type',
                            'cca_id': 'CCA ID'}
-            data = ccas.get(form_data[key])
+            data = ccas.get(name)
+            
         else:
+            name = form_data[key].strip()
             table_header = {'activity_name': 'Activity Name',
                             'start_date': 'Start Date',
                            'end_date': 'End Date',
                            'description': 'Description',
                            'activity_id': 'Activity ID'}
-            data = activities.get(form_data[key])
+            data = activities.get(name)
 
-        if data:  # if in database
+        if data and name != '': # if in database
             title = f'{key}: {form_data[key]}'
             page_type = 'result'
             # get from database
@@ -232,7 +269,9 @@ def view():
                            choice=choice,
                            key=key,
                            error=error,
-                           table_header=table_header)
+                           table_header=table_header,
+                           list_of_dicts=list_of_dicts,
+                           list_header=list_header)
 
 
 @app.route('/edit', methods=['GET', 'POST'])
@@ -261,7 +300,8 @@ def edit():
         ] else 'Activity'
         if choice in ['Add CCA Member', 'Add Activity Participant']:
             action = 'add'
-            form_data['Role'] = ''
+            #default values
+            form_data['Role'] = 'Member' if type == 'CCA' else 'Participant'
             if type == 'Activity':
                 form_data['Award'] = ''
                 form_data['Hours'] = ''
@@ -269,7 +309,7 @@ def edit():
             action = 'edit'
         # action will remain as removed if its remove cca member/remove activity participant
         form_data[type] = ''
-        title = f'Please enter the Student Name and {type}'
+        title = f'Which student do you want to {action} from the {type}' if action != 'add' else f'Which student do you want to {action} to the {type}'
         form_meta = {'action': '/edit?searched', 'method': 'post'}
 
     if 'searched' in request.args:
@@ -278,51 +318,108 @@ def edit():
         form_data = dict(request.form)
         form_data.pop('action')
         error = has_error(form_data)
-        type = 'Activity' if 'Hours' in form_data.keys() else 'CCA'
+        type = 'Activity' if 'Activity' in form_data.keys() else 'CCA'
 
-        if False:  # if student does not exist
-            error = 'Student does not exist'
+        if error == '':
+            if type == 'Activity' and action == 'add':
+                # there is no student in specified activity
+                if activities.get_student(form_data['Student Name'], form_data['Activity']): 
+                    error = 'Student already exists'
+                elif not activities.get(form_data['Activity']):
+                    error = 'Activity does not exist'
+                elif not students.get(form_data['Student Name']):
+                    error = 'Student does not exist'
+            elif type == 'Activity' and action != 'add':
+                if not activities.get_student(form_data['Student Name'], form_data['Activity']):
+                    error = 'Student does not exist'
+            elif type == 'CCA' and action == 'add':
+                # there is no student in specified activity
+                if ccas.get_student(form_data['Student Name'], form_data['CCA']): 
+                    error = 'Student already exists'
+                elif not ccas.get(form_data['CCA']):
+                    error = 'CCA does not exist'
+                elif not students.get(form_data['Student Name']):
+                    error = 'Student does not exist'
+            elif type == 'CCA' and action != 'add':
+                if not ccas.get_student(form_data['Student Name'], form_data['CCA']):
+                    error = 'Student does not exist'
+                
         if error:
             form_meta = {'action': '/edit?searched', 'method': 'post'}
+            tdtype = 'text'
+            page_type = 'search'
+            title = f'Please enter the Student Name and {type}'
         else:
             if action != 'add':
                 name = request.form['Student Name']
                 
                 if type == 'Activity':
                     record = activities.get_student(name, request.form[type])[0]
+                    form_data['Award'] = record['award']
+                    form_data['Hours'] = record['hours']  
                 else:
                     record = ccas.get_student(name, request.form[type])[0]
+                    form_data['CCA'] = record['cca_name']
+                form_data['Student Name'] = record['student_name']
                 form_data['Role'] = record['role']
-                if type == 'Activity':
-                    form_data['Award'] = '?'
-                    form_data['Hours'] = '?'  # those question mark stuff get from database
+                    
             form_meta = {'action': '/edit?success', 'method': 'post'}
 
-        if action == 'add':
-            title = 'Please confirm that you would like to add the following'
-            tdtype = 'hidden'
-        elif action == 'edit':
-            title = 'Please edit the following details'
-        else:
-            title = 'Please confirm that you would like to delete the following record'
-            tdtype = 'hidden'
+            if action == 'add':
+                title = 'Please confirm that you would like to add the following'
+                tdtype = 'hidden'
+                #get the correct values for the confirm page
+                if type == 'Activity':
+                    form_data['Activity'] = activities.get(form_data['Activity'])['activity_name']
+                else:
+                    form_data['CCA'] = ccas.get(form_data['CCA'])['cca_name']
+                form_data['Student Name'] = students.get(form_data['Student Name'])['student_name']
+            elif action == 'edit':
+                title = 'Please edit the following details'
+            else:
+                title = 'Please confirm that you would like to delete the following record'
+                tdtype = 'hidden'
 
     if 'success' in request.args:
         action = request.form['action']
         form_data = dict(request.form)
         form_data.pop('action')
-        # edit the data from the database
-        if action == 'add':
+        type = 'CCA' if 'CCA' in form_data.keys() else 'Activity'
+
+        if type == 'Activity':
+            record = {'activity_name': form_data['Activity'],
+                     'student_name': form_data['Student Name'],
+                     'role': form_data['Role'],
+                     'award': form_data['Award'],
+                     'hours': form_data['Hours']}
+        else:
+            record = {'cca_name': form_data['CCA'],
+                     'student_name': form_data['Student Name'],
+                     'role': form_data['Role']}
+        
+        if action == 'add': # add form_data into database
             word = 'added'
-            pass
-            # add form_data into database
-        elif action == 'edit':
+            if type == 'Activity':
+                activities.add_student(record) 
+            else:
+                ccas.add_student(record) 
+            
+        elif action == 'edit': # edit new data
             word = 'edited'
-            pass
-            # edit new data
-        elif action == 'remove':
+            if type == 'Activity':
+                activities.update_student(record)
+            else:
+                ccas.update_student(record)
+        
+        elif action == 'remove': # remove from database
             word = 'removed'
-            pass  # remove from database
+            if type == 'Activity':
+                activities.delete_student(form_data['Student Name'], 
+                                          form_data['Activity'])
+            else:
+                ccas.delete_student(form_data['Student Name'],
+                                    form_data['CCA'])
+            
         page_type = 'success'
         title = f'The following record has been {word}!'
 
