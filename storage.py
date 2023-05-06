@@ -5,13 +5,24 @@ DBNAME = "webapp_database.db"
 class Collection:
     """
     Collection class acts as an interface with the database and its tables.
+
+    Parameters:
+    tblname
+
+    Methods:
+    _execute(query, values=None)
+    _return(query, values=None, multi=False)
+    _is_exist(tblname, left_key, left_value, right_key=None, right_value=None)
+    _display(row_list)
+    _retrieve_id(tblname, name, name_key, id_key, like=False)
+    display_all()
     """
     def __init__(self, tblname):
         self._dbname = DBNAME
         self._tblname = tblname
 
     def __repr__(self):
-        pass
+        return f'Collection({self.tblname})'
 
     def _execute(self, query, values=None):
         conn = sqlite3.connect(self._dbname)
@@ -101,6 +112,7 @@ class Collection:
         return name_id
 
     def display_all(self):
+        """Display all the records in a collection"""
         query = f"""SELECT * FROM '{self._tblname}'"""
         rows = self._return(query, multi=True)
         self._display(rows)
@@ -316,6 +328,7 @@ class Subjects(Collection):
 
     Methods:
     --------
+    _subj_is_exist(subj_list)
     add_student(record)
     get_student(student_name)
     delete_student(record)
@@ -434,7 +447,6 @@ class CCAs(Collection):
     add_student(record)
     get(cca_name)
     get_student(student_name)
-    get_all(cca_name)
     update(cca_name, record)
     update_student(record)
     delete(cca_name)
